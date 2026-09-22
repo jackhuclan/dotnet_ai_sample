@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hyperlight.HyperlightSandbox.Guest.Python" Version="0.6.0" />
+    <PackageReference Include="Microsoft.Agents.AI.Hyperlight" Version="1.22.0-preview.260918.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\dotnet_ai_agent_sample_common\dotnet_ai_agent_sample_common.csproj" />
+    <ProjectReference Include="..\Harness_Shared_Console\Harness_Shared_Console.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="skills\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\dotnet_ai_agent_sample\.env" Link=".env">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

@@ -110,14 +110,14 @@ internal class Program
             {
                 Observers = [
                     new OpenAIResponsesWebSearchDisplayObserver(),
-            new OpenAIResponsesErrorObserver(),
-            .. HarnessConsoleOptions.BuildObserversWithPlanning(
-                agent,
-                planModeName: "plan",
-                executionModeName: "execute",
-                maxContextWindowTokens: MaxContextWindowTokens,
-                maxOutputTokens: MaxOutputTokens,
-                toolFormatters: [new DownloadUriToolFormatter(), .. ToolCallFormatter.BuildDefaultToolFormatters()])],
+                    new OpenAIResponsesErrorObserver(),
+                    .. HarnessConsoleOptions.BuildObserversWithPlanning(
+                        agent,
+                        planModeName: "plan",
+                        executionModeName: "execute",
+                        maxContextWindowTokens: MaxContextWindowTokens,
+                        maxOutputTokens: MaxOutputTokens,
+                        toolFormatters: [new DownloadUriToolFormatter(), .. ToolCallFormatter.BuildDefaultToolFormatters()])],
                 CommandHandlers = HarnessConsoleOptions.BuildDefaultCommandHandlers(agent),
             });
     }

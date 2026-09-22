@@ -11,5 +11,6 @@
   <Project Path="dotnet_ai_agent_sample/dotnet_ai_agent_sample.csproj" Id="d5f80267-9c07-43f9-9649-e797863d0110" />
   <Project Path="dotnet_ai_agent_sample_common/dotnet_ai_agent_sample_common.csproj" Id="f5c4be9c-88f5-4084-b544-c2605a0e7c6a" />
   <Project Path="Harness_Step01_Research/Harness_Step01_Research.csproj" Id="1c6a23c8-4ab5-4ecf-b94e-f1fdbb860cc4" />
+  <Project Path="Harness_Step04_CodeExecution/Harness_Step04_CodeExecution.csproj" />
   <Project Path="TestProject1/dotnet_ai_sample.csproj" Id="7a61f630-5b02-4948-b11c-904505f12868" />
 </Solution>
