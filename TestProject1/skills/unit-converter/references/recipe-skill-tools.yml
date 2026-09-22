@@ -1,0 +1,65 @@
+﻿name: recipe-skill-tools
+kind: tool
+version: 1.0
+classpath: TestProject1.IRecipeService
+tools:
+  - name: load_recipe
+    description: A tool for converting units in recipes.
+    method: LoadRecipe
+    parameters: |
+      type: object
+      properties:
+        recipe:
+          type: string
+          description: The recipe to convert.
+        fromUnit:
+          type: string
+          description: The unit to convert from.
+        toUnit:
+          type: string
+          description: The unit to convert to.
+      required:
+        - recipe
+        - fromUnit
+        - toUnit
+        
+  
+  - name: convert-recipe
+    description: A tool for converting units in recipes.
+    method: ConvertUnits
+    parameters: |
+      type: object
+      properties:
+        recipe:
+          type: string
+          description: The recipe to convert.
+        fromUnit:
+          type: string
+          description: The unit to convert from.
+        toUnit:
+          type: string
+          description: The unit to convert to.
+      required:
+        - recipe
+        - fromUnit
+        - toUnit
+
+  - name: save-recipe
+    description: A tool for saving recipes.
+    method: SaveRecipe
+    parameters: |
+      type: object
+      properties:
+        recipe:
+          type: string
+          description: The recipe to save.
+        fromUnit:
+          type: string
+          description: The unit to convert from.
+        toUnit:
+          type: string
+          description: The unit to convert to.
+      required:
+        - recipe
+        - fromUnit
+        - toUnit

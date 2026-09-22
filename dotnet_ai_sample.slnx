@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Project Path="dotnet_ai_agent_sample/dotnet_ai_agent_sample.csproj" Id="d5f80267-9c07-43f9-9649-e797863d0110" />
+  <Project Path="TestProject1/dotnet_ai_sample.csproj" Id="7a61f630-5b02-4948-b11c-904505f12868" />
+</Solution>
