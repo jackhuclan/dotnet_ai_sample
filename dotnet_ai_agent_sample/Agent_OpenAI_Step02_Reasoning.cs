@@ -5,15 +5,16 @@ using System.ClientModel;
 
 namespace dotnet_ai_agent_sample;
 
-public class Agent_OpenAI_Step02_Reasoning : BaseTest
+public class Agent_OpenAI_Step02_Reasoning
 {
     public async Task Run()
     {
-        var client = new OpenAIClient(new ApiKeyCredential(OPENAI_API_KEY), new OpenAIClientOptions
+        var envSetting = new EnvSetting();
+        var client = new OpenAIClient(new ApiKeyCredential(envSetting.OPENAI_API_KEY), new OpenAIClientOptions
         {
             Endpoint = new Uri("https://api.deepseek.com"),
         }).GetResponsesClient()
-         .AsIChatClient(OPENAI_CHAT_MODEL_NAME)
+         .AsIChatClient(envSetting.OPENAI_CHAT_MODEL_NAME)
          .AsBuilder()
          .ConfigureOptions(o =>
          {

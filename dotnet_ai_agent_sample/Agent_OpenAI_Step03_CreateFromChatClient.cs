@@ -4,16 +4,17 @@ using System.ClientModel;
 
 namespace dotnet_ai_agent_sample;
 
-internal class Agent_OpenAI_Step03_CreateFromChatClient : BaseTest
+internal class Agent_OpenAI_Step03_CreateFromChatClient
 {
     public async Task Run()
     {
+        var envSetting = new EnvSetting();
         // Create a ChatClient directly from OpenAIClient
-        ChatClient chatClient = new OpenAIClient(new ApiKeyCredential(OPENAI_API_KEY),
+        ChatClient chatClient = new OpenAIClient(new ApiKeyCredential(envSetting.OPENAI_API_KEY),
             new OpenAIClientOptions
             {
                 Endpoint = new Uri("https://api.deepseek.com"),
-            }).GetChatClient(OPENAI_CHAT_MODEL_NAME);
+            }).GetChatClient(envSetting.OPENAI_CHAT_MODEL_NAME);
 
         // Create an agent directly from the ChatClient using OpenAIChatClientAgent
         OpenAIChatClientAgent agent = new(chatClient, instructions: "You are good at telling jokes.", name: "Joker");

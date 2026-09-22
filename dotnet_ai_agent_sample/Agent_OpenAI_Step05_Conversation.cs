@@ -9,16 +9,17 @@ using System.Text.Json;
 
 namespace dotnet_ai_agent_sample;
 
-internal class Agent_OpenAI_Step05_Conversation : BaseTest
+internal class Agent_OpenAI_Step05_Conversation
 {
     public async Task Run()
     {
+        var envSetting = new EnvSetting();
         // Create a ConversationClient directly from OpenAIClient
-        OpenAIClient openAIClient = GetOpenAIClient();
+        OpenAIClient openAIClient = envSetting.GetOpenAIClient();
         ConversationClient conversationClient = openAIClient.GetConversationClient();
 
         // Create an agent directly from the ResponsesClient using OpenAIResponseClientAgent
-        ChatClientAgent agent = new(openAIClient.GetResponsesClient().AsIChatClient(OPENAI_CHAT_MODEL_NAME), instructions: "You are a helpful assistant.", name: "ConversationAgent");
+        ChatClientAgent agent = new(openAIClient.GetResponsesClient().AsIChatClient(envSetting.OPENAI_CHAT_MODEL_NAME), instructions: "You are a helpful assistant.", name: "ConversationAgent");
 
         ClientResult createConversationResult = await conversationClient.CreateConversationAsync(BinaryContent.Create(BinaryData.FromString("{}")));
 
