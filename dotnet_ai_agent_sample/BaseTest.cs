@@ -37,4 +37,14 @@ public class BaseTest
             Endpoint = new Uri("https://api.deepseek.com"),
         }).GetChatClient(DEEPSEEK_PRO_MODEL_NAME).AsIChatClient();
     }
+
+    public OpenAIClient GetOpenAIClient()
+    {
+        DotNetEnv.Env.Load();
+        var apiKey = Env.GetString("OPENAI_API_KEY");
+        return new OpenAIClient(new ApiKeyCredential(apiKey), new OpenAIClientOptions
+        {
+            Endpoint = new Uri("https://api.deepseek.com"),
+        });
+    }
 }
