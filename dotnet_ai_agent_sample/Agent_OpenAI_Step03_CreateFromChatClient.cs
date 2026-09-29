@@ -1,4 +1,5 @@
-﻿using OpenAI;
+﻿using dotnet_ai_agent_sample_common;
+using OpenAI;
 using OpenAI.Chat;
 using System.ClientModel;
 

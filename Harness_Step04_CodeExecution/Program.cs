@@ -18,7 +18,7 @@
 #pragma warning disable OPENAI001 // Suppress experimental API warnings for Responses API usage.
 #pragma warning disable MAAI001  // Suppress experimental API warnings for Agents AI experiments.
 
-using dotnet_ai_agent_sample;
+using dotnet_ai_agent_sample_common;
 using Harness.Shared.Console;
 using HyperlightSandbox.Guest.Python;
 using Microsoft.Agents.AI;

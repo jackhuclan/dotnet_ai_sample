@@ -3,7 +3,7 @@ using Microsoft.Extensions.AI;
 using OpenAI;
 using System.ClientModel;
 
-namespace dotnet_ai_agent_sample;
+namespace dotnet_ai_agent_sample_common;
 
 public class EnvSetting
 {

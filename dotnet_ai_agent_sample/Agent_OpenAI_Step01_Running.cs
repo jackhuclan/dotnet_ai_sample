@@ -1,4 +1,5 @@
-﻿using Microsoft.Agents.AI;
+﻿using dotnet_ai_agent_sample_common;
+using Microsoft.Agents.AI;
 using OpenAI.Responses;
 using System.ClientModel;
 
