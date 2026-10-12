@@ -2,7 +2,7 @@
 
 namespace Mega.Platform.Core.Host.Command;
 
-internal interface IMqttFunctionTools
+public interface IMqttFunctionTools
 {
     AITool[] AsTools();
 }

@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Mega.Platform.Core.Host.Command;
 
-internal class CameraCommandSet : IMqttFunctionTools
+public class CameraCommandSet : IMqttFunctionTools
 {
     private readonly IDeviceServiceInvoker _deviceServiceInvoker;
 
