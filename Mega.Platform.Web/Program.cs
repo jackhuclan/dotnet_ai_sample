@@ -1,4 +1,6 @@
 
+using Mega.Platform.Core.Host;
+
 namespace Mega.Platform.Web;
 
 public class Program

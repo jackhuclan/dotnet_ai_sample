@@ -1,6 +1,6 @@
 ﻿using Mega.Platform.Core.Models;
 
-namespace Mega.Platform.Core;
+namespace Mega.Platform.Core.Host;
 
 public interface IDeviceServiceInvoker
 {
