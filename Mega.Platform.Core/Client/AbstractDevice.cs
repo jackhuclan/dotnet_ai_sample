@@ -10,6 +10,7 @@ public abstract class AbstractDevice : IDevice
     public string ProductId { get; set; } = string.Empty;
     public string DeviceId { get; set; } = string.Empty;
     public string DeviceName { get; set; } = string.Empty;
+    public string ClientId { get; set; } = string.Empty;
     public IObjectFactory ObjectFactory { get; private set; }
     public IMqttClientWrapper MqttClientWrapper { get; }
     /// <summary>
@@ -43,7 +44,7 @@ public abstract class AbstractDevice : IDevice
     /// 添加一条指令
     /// </summary>
     /// <param name="remoteCommand">指令</param>
-    protected void AddCommand(IRemoteCommand remoteCommand)
+    public void AddCommand(IRemoteCommand remoteCommand)
     {
         Commands.AddCommand(remoteCommand);
     }
@@ -54,7 +55,7 @@ public abstract class AbstractDevice : IDevice
     /// <param name="commandDescriptor">指令描述，包含commandPath,即服务的全路径地址</param>
     /// <param name="command">指令动作</param>
     /// <param name="commandUsage">指令用途种类</param>
-    protected void AddCommand(CommandDescriptor commandDescriptor, CommandFunction command, CommandUsageKind commandUsage = CommandUsageKind.Both)
+    public void AddCommand(CommandDescriptor commandDescriptor, CommandFunction command, CommandUsageKind commandUsage = CommandUsageKind.Both)
     {
         Throw.IfNullOrEmpty(commandDescriptor.CommandId);
         Throw.IfNullOrEmpty(commandDescriptor.CommandPath);

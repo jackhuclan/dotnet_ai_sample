@@ -50,7 +50,7 @@ public class MqttClientWrapper : IMqttClientWrapper
         _mqttServerOptions = options.Value;
         mqttClient.ApplicationMessageReceivedAsync += arg => _clientMqttApplicationMessageListner.OnApplicationMessageReceivedAsync(arg);
         mqttClient.DisconnectedAsync += MqttClient_DisconnectedAsync;
-        _periodicTimer = new PeriodicTimer(TimeSpan.FromSeconds(_mqttServerOptions.HeartbeatPeriod));
+        _periodicTimer = new PeriodicTimer(_mqttServerOptions.HeartbeatPeriod);
         _logger = loggerFactory.CreateLogger<MqttClientWrapper>();
 
         OnConnected += () => Task.CompletedTask;
@@ -101,7 +101,7 @@ public class MqttClientWrapper : IMqttClientWrapper
             try
             {
                 CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-                cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(_mqttServerOptions.MqttConnectionTimeOut));
+                cancellationTokenSource.CancelAfter(_mqttServerOptions.MqttConnectionTimeOut);
                 _logger.LogInformation($"MqttClientWrapper is connecting to {_mqttServerOptions.Host}:{_mqttServerOptions.Port}");
 
                 string certPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _mqttServerOptions.CertPemFilePath);
@@ -127,7 +127,7 @@ public class MqttClientWrapper : IMqttClientWrapper
 
                 MqttClientOptions mqttClientOptions = mqttClientBuilder
                     .WithTcpServer(_mqttServerOptions.Host, _mqttServerOptions.Port)
-                    .WithKeepAlivePeriod(TimeSpan.FromSeconds(_mqttServerOptions.KeepAlivePeriod))
+                    .WithKeepAlivePeriod(_mqttServerOptions.KeepAlivePeriod)
                     .WithProtocolVersion(MQTTnet.Formatter.MqttProtocolVersion.V500)
                     .Build();
 

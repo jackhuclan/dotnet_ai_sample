@@ -17,7 +17,6 @@ public class AgentController : ControllerBase
     private readonly IAgentManager _agentManager;
     private readonly ISessionManager _sessionManager;
     private readonly CameraCommandSet _cameraCommandSet;
-    private readonly CancellationToken _token = new CancellationTokenSource().Token;
 
     public AgentController(IAgentManager agentManager,
         ISessionManager sessionManager,
@@ -29,16 +28,16 @@ public class AgentController : ControllerBase
     }
 
     [HttpPost("/chat")]
-    public async Task<ChatResponse> Chat(ChatRequest chatRequest)
+    public async Task<ChatResponse> Chat([FromBody] ChatRequest chatRequest, CancellationToken cancellationToken)
     {
         var mainAgentName = $"{chatRequest.ProductId}_{chatRequest.DeviceId}_main_agent";
         var agent = _agentManager.GetOrCreateAgent(mainAgentName, CreateAgent);
         if (!_sessionManager.TryGetSession(chatRequest.SessionId, out DeviceAgentSession session))
         {
-            session = (DeviceAgentSession)await agent.CreateSessionAsync(_token);
+            session = (DeviceAgentSession)await agent.CreateSessionAsync(cancellationToken);
         }
 
-        var response = await agent.RunAsync("请打开设备001", session, null, _token);
+        var response = await agent.RunAsync("请打开设备001", session, null, cancellationToken);
         return new ChatResponse
         {
             Event = "chat_response",

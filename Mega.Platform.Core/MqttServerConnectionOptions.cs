@@ -40,17 +40,17 @@ public class MqttServerConnectionOptions
     //
     // 摘要:
     //     mqtt client keep alive time
-    public int KeepAlivePeriod { get; set; } = 60;
+    public TimeSpan KeepAlivePeriod { get; set; } = TimeSpan.FromSeconds(60);
 
     //
     // 摘要:
     //     mqtt client heart beat time
-    public int HeartbeatPeriod { get; set; } = 2;
+    public TimeSpan HeartbeatPeriod { get; set; } = TimeSpan.FromSeconds(2);
 
     //
     // 摘要:
     //     mqtt client 连接超时时间
-    public int MqttConnectionTimeOut { get; set; } = 15;
+    public TimeSpan MqttConnectionTimeOut { get; set; } = TimeSpan.FromSeconds(15);
 
     //
     // 摘要:

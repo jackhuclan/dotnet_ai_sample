@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Shared.Diagnostics;
 
 namespace Mega.Platform.Core.Client;
 
@@ -10,8 +11,13 @@ public static class ClientMqttSetup
     /// </summary>
     /// <param name="services"></param>
     /// <param name="configuration"></param>
-    public static void AddRemoteCapability(this IServiceCollection services, IConfiguration configuration)
+    public static void AddMqttCapability(this IServiceCollection services, IConfiguration configuration)
     {
+        Throw.IfNull(configuration.GetSection(nameof(DeviceDescriptor)));
+        Throw.IfNull(configuration.GetSection(nameof(MqttServerConnectionOptions)));
+
+        services.Configure<MqttServerConnectionOptions>(configuration.GetSection(nameof(MqttServerConnectionOptions)));
+        services.Configure<DeviceDescriptor>(configuration.GetSection(nameof(DeviceDescriptor)));
         services.AddMqttClient(configuration);
         services.AddSingleton<IMqttClientWrapper, MqttClientWrapper>();
         services.AddSingleton<IObjectFactory, ObjectFactory>();
