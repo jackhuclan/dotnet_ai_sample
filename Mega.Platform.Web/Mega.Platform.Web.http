@@ -1,0 +1,6 @@
+@Mega.Platform.Web_HostAddress = http://localhost:5114
+
+GET {{Mega.Platform.Web_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
