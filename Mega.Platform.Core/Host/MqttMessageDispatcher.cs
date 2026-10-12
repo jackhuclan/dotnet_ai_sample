@@ -1,4 +1,6 @@
-﻿namespace Mega.Platform.Core;
+﻿using MQTTnet;
+
+namespace Mega.Platform.Core.Host;
 
 internal class MqttMessageDispatcher : IMqttMessageDispatcher
 {

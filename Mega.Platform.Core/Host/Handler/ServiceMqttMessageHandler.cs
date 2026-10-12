@@ -1,6 +1,7 @@
-﻿using System.Text.Json;
+﻿using Mega.Platform.Core.Host;
+using System.Text.Json;
 
-namespace Mega.Platform.Core.Handler;
+namespace Mega.Platform.Core.Host.Handler;
 
 internal class ServiceMqttMessageHandler : IMqttMessageHandler
 {

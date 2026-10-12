@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 using MQTTnet;
 using System.Text.Json;
 
-namespace Mega.Platform.Core;
+namespace Mega.Platform.Core.Host;
 
 internal class HostMqttClient : IHostedService
 {

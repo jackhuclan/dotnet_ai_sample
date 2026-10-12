@@ -2,7 +2,7 @@
 
 namespace Mega.Platform.Core.Client.Command;
 
-public class DelegateCommand<TDevice> : IRemoteCommand
+public class DelegateCommand<TDevice> : AbstractCommand<TDevice>, IRemoteCommand
     where TDevice : IDevice
 {
     private readonly CommandFunction _commandFunction;
@@ -11,14 +11,11 @@ public class DelegateCommand<TDevice> : IRemoteCommand
         TDevice device,
         CommandDescriptor commandDescriptor,
         CommandFunction commandFunction)
-        : base(serviceProvider, device)
+        : base(serviceProvider, device, commandDescriptor)
     {
-        Descriptor = commandDescriptor;
         _commandFunction = commandFunction;
     }
 
-    public CommandDescriptor Descriptor { get; }
-
-    public Task<DeviceServiceInvokeResponse> Invoke(DeviceServiceInvokeRequest deviceServiceInvokeRequest)
+    public override Task<DeviceServiceInvokeResponse> Invoke(DeviceServiceInvokeRequest deviceServiceInvokeRequest)
         => _commandFunction.Invoke(deviceServiceInvokeRequest);
 }

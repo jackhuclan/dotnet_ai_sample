@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Shared.Diagnostics;
 
-namespace Mega.Platform.Core;
+namespace Mega.Platform.Core.Host;
 
 internal class HostDeviceServiceInvoker : IDeviceServiceInvoker
 {

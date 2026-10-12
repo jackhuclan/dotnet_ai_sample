@@ -1,7 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Mega.Platform.Core.Client.Command;
+using Mega.Platform.Core.Models;
+using Microsoft.Extensions.Logging;
+using Microsoft.Shared.Diagnostics;
 using MQTTnet;
 using MQTTnet.Protocol;
 using System.Collections.Concurrent;
+using System.Text;
 using System.Text.Json;
 
 namespace Mega.Platform.Core.Client;
@@ -10,34 +14,115 @@ public class DefaultClientMqttApplicationMessageListener : IClientMqttApplicatio
 {
     private readonly ILogger<DefaultClientMqttApplicationMessageListener> _logger;
     private readonly IMqttClient _mqttClient;
-    private readonly IDeviceProvider _deviceProvider;
+    public ConcurrentDictionary<string, CommandFunction> Services => _services;
     private readonly ConcurrentDictionary<string, CommandFunction> _services;
-
+    private IDevice? _device;
     public DefaultClientMqttApplicationMessageListener(IMqttClient mqttClient,
-        IDeviceProvider deviceProvider,
         ILoggerFactory loggerFactory)
     {
         _logger = loggerFactory.CreateLogger<DefaultClientMqttApplicationMessageListener>();
         _services = new ConcurrentDictionary<string, CommandFunction>();
         _mqttClient = mqttClient;
-        _deviceProvider = deviceProvider;
     }
 
-    public ConcurrentDictionary<string, CommandFunction> Services => _services;
+    public virtual async Task OnConnected(IDevice device)
+    {
+        _device = device;
+        _logger.LogInformation($"OnMqttConnected {device.DeviceId} MqttConnected=true");
+
+        var reported = await OnHeartbeat(device);
+
+        if (!reported) return;
+
+        foreach (var command in device.Commands.Where(x => (x.Value.Descriptor.UsageScope & CommandUsageKind.Mqtt) == CommandUsageKind.Mqtt))
+        {
+            await SubscribeService(device, command.Value);
+        }
+    }
+
+    public virtual Task OnDisonnected(IDevice device)
+    {
+        _services.Clear();
+        _logger.LogInformation($"Mqtt disconnected on {device.DeviceId}!");
+        return Task.CompletedTask;
+    }
+
+    public virtual async Task<bool> OnHeartbeat(IDevice device)
+    {
+        try
+        {
+            var request = new OnlineRequest
+            {
+                ProductId = device.ProductId,
+                DeviceId = device.DeviceId,
+                DeviceName = device.DeviceName,
+                Connected = true,
+            };
+
+            byte[] payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request));
+            var publishResult = await _mqttClient.PublishBinaryAsync(MqttTopics.GetSubscribeTopic(MqttTopics.OnlineTopicTemplate,
+                device.ProductId,
+                device.DeviceId), payload, MqttQualityOfServiceLevel.ExactlyOnce);
+            _logger.LogInformation($"OnHeartbeat {device.DeviceId} when MqttConnected=true,publishResult={publishResult.ReasonCode}");
+            return publishResult != null && publishResult.IsSuccess;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return false;
+        }
+    }
+
+    public async Task SubscribeService(IDevice device,
+        string commandPath,
+        CommandFunction commandFunction,
+        MqttQualityOfServiceLevel mqttQualityOfServiceLevel = MqttQualityOfServiceLevel.AtLeastOnce)
+    {
+        try
+        {
+            if (_services.TryAdd(commandPath, commandFunction))
+            {
+                var subscribeResult = await _mqttClient.SubscribeAsync(commandPath, mqttQualityOfServiceLevel);
+                _logger.LogInformation($"SubscribeService: {commandPath},ResultCode={subscribeResult.Items.FirstOrDefault()?.ResultCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+        }
+    }
+
+    public async Task SubscribeService(IDevice device,
+        IRemoteCommand remoteCommand,
+        MqttQualityOfServiceLevel mqttQualityOfServiceLevel = MqttQualityOfServiceLevel.AtLeastOnce)
+    {
+        try
+        {
+            if (_services.TryAdd(remoteCommand.Descriptor.CommandPath, remoteCommand.Invoke))
+            {
+                var subscribeResult = await _mqttClient.SubscribeAsync(remoteCommand.Descriptor.CommandPath, mqttQualityOfServiceLevel);
+                _logger.LogInformation($"SubscribeService: {remoteCommand.Descriptor.CommandPath},ResultCode={subscribeResult.Items.FirstOrDefault()?.ResultCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+        }
+    }
 
     public virtual async Task OnApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
     {
-        if (arg.ApplicationMessage.Topic == Topics.Upstream.OnlineTopic
+        Throw.IfNull(_device);
+
+        if (arg.ApplicationMessage.Topic == MqttTopics.OnlineTopicTemplate
             && arg.ReasonCode == MqttApplicationMessageReceivedReasonCode.Success)
         {
             await Task.Run(() =>
             {
                 var onlineResponse = JsonSerializer.Deserialize<OnlineResponse>(arg.ApplicationMessage.PayloadSegment);
                 if (onlineResponse == null) return;
-                var device = _deviceProvider.Devices.FirstOrDefault(d => d.DeviceId == onlineResponse.DeviceId);
-                if (device == null) return;
-                device.ClientId = arg.ClientId;
-                _logger.LogInformation($"Retrieved {device.DeviceId}'s clientId={arg.ClientId}");
+                _device.ClientId = arg.ClientId;
+                _logger.LogInformation($"Retrieved {_device.DeviceId}'s clientId={arg.ClientId}");
             });
         }
 

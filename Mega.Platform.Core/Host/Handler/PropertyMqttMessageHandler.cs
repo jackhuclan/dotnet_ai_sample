@@ -1,6 +1,7 @@
-﻿using MQTTnet;
+﻿using Mega.Platform.Core.Host;
+using MQTTnet;
 
-namespace Mega.Platform.Core.Handler;
+namespace Mega.Platform.Core.Host.Handler;
 
 internal class PropertyMqttMessageHandler : IMqttMessageHandler
 {

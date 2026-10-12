@@ -1,4 +1,4 @@
-﻿namespace Mega.Platform.Core;
+﻿namespace Mega.Platform.Core.Host;
 
 internal class MqttMessageHandlerFactory : IMqttMessageHandlerFactory
 {

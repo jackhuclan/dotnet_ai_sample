@@ -1,8 +1,9 @@
-﻿using Mega.Platform.Web.Models;
+﻿using Mega.Platform.Core.Host;
+using Mega.Platform.Web.Models;
 using MQTTnet;
 using System.Text.Json;
 
-namespace Mega.Platform.Core.Handler;
+namespace Mega.Platform.Core.Host.Handler;
 
 internal class StatusMqttMessageHandler : IMqttMessageHandler
 {

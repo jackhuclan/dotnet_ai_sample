@@ -1,0 +1,82 @@
+﻿using Mega.Platform.Core.Client.Command;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Shared.Diagnostics;
+
+namespace Mega.Platform.Core.Client;
+
+public abstract class AbstractDevice : IDevice
+{
+    public string ProductId { get; set; } = string.Empty;
+    public string DeviceId { get; set; } = string.Empty;
+    public string DeviceName { get; set; } = string.Empty;
+    public IObjectFactory ObjectFactory { get; private set; }
+    public IMqttClientWrapper MqttClientWrapper { get; }
+    /// <summary>
+    /// 全局服务
+    /// </summary>
+    public IServiceProvider ApplicationServices { get; }
+    /// <summary>
+    /// 设备描述符
+    /// </summary>
+    public DeviceDescriptor DeviceDescriptor { get; private set; }
+    private readonly IHostApplicationLifetime _applicationLifetime;
+
+    /// <summary>
+    /// 远程服务控制指令集合
+    /// </summary>
+    public CommandSet Commands { get; } = new();
+
+    protected AbstractDevice(DeviceDescriptor deviceDescriptor,
+       IServiceProvider serviceProvider)
+    {
+        ApplicationServices = serviceProvider;
+        DeviceDescriptor = deviceDescriptor;
+        _applicationLifetime = serviceProvider.GetRequiredService<IHostApplicationLifetime>();
+        MqttClientWrapper = serviceProvider.GetRequiredService<IMqttClientWrapper>();
+        ObjectFactory = serviceProvider.GetRequiredService<IObjectFactory>();
+        _applicationLifetime.ApplicationStarted.Register(async () => await OnApplicationStarted());
+        _applicationLifetime.ApplicationStopping.Register(async () => await OnApplicationStopping());
+    }
+
+    /// <summary>
+    /// 添加一条指令
+    /// </summary>
+    /// <param name="remoteCommand">指令</param>
+    protected void AddCommand(IRemoteCommand remoteCommand)
+    {
+        Commands.AddCommand(remoteCommand);
+    }
+
+    /// <summary>
+    /// 添加一条指令
+    /// </summary>
+    /// <param name="commandDescriptor">指令描述，包含commandPath,即服务的全路径地址</param>
+    /// <param name="command">指令动作</param>
+    /// <param name="commandUsage">指令用途种类</param>
+    protected void AddCommand(CommandDescriptor commandDescriptor, CommandFunction command, CommandUsageKind commandUsage = CommandUsageKind.Both)
+    {
+        Throw.IfNullOrEmpty(commandDescriptor.CommandId);
+        Throw.IfNullOrEmpty(commandDescriptor.CommandPath);
+        Throw.IfNull(command);
+
+        Commands.AddCommand(ObjectFactory.CreateObject<DelegateCommand<AbstractDevice>>(ApplicationServices, this, commandDescriptor, command));
+    }
+
+    /// <summary>
+    /// do something after application started
+    /// </summary>
+    protected virtual async Task OnApplicationStarted()
+    {
+        _ = MqttClientWrapper.ConnectMqtt(this, _applicationLifetime.ApplicationStarted);
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// do something when application is closing
+    /// </summary>
+    protected virtual async Task OnApplicationStopping()
+    {
+        await Task.CompletedTask;
+    }
+}

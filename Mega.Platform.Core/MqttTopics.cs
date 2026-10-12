@@ -13,4 +13,9 @@ public class MqttTopics
     {
         return string.Format(format, "+", "+");
     }
+
+    public static string GetSubscribeTopic(string format, string productId, string deviceId)
+    {
+        return string.Format(format, productId, deviceId);
+    }
 }

@@ -9,9 +9,7 @@ public class MqttClientWrapper : IMqttClientWrapper
 {
     private volatile bool _isConnected = false;
     private readonly IMqttClient _mqttClient;
-    private readonly IClientMqttListener _clientMqttListener;
     private readonly IClientMqttApplicationMessageListener _clientMqttApplicationMessageListner;
-    private readonly IDeviceProvider _deviceProvider;
     private readonly IMqttClientLogger _mqttClientLogger;
     private readonly ILogger<MqttClientWrapper> _logger;
     private readonly MqttServerConnectionOptions _mqttServerOptions;
@@ -43,15 +41,11 @@ public class MqttClientWrapper : IMqttClientWrapper
     public MqttClientWrapper(IMqttClient mqttClient,
         IOptions<MqttServerConnectionOptions> options,
         ILoggerFactory loggerFactory,
-        IClientMqttListener clientMqttListener,
         IClientMqttApplicationMessageListener clientMqttApplicationMessageListner,
-        IDeviceProvider deviceProvider,
         IMqttClientLogger mqttClientLogger)
     {
         _mqttClient = mqttClient;
-        _clientMqttListener = clientMqttListener;
         _clientMqttApplicationMessageListner = clientMqttApplicationMessageListner;
-        _deviceProvider = deviceProvider;
         _mqttClientLogger = mqttClientLogger;
         _mqttServerOptions = options.Value;
         mqttClient.ApplicationMessageReceivedAsync += arg => _clientMqttApplicationMessageListner.OnApplicationMessageReceivedAsync(arg);
@@ -63,7 +57,7 @@ public class MqttClientWrapper : IMqttClientWrapper
         OnDisconnected += () => Task.CompletedTask;
     }
 
-    public async Task ConnectMqtt(CancellationToken cancellationToken = default)
+    public async Task ConnectMqtt(IDevice device, CancellationToken cancellationToken = default)
     {
         while (await _periodicTimer.WaitForNextTickAsync())
         {
@@ -76,14 +70,11 @@ public class MqttClientWrapper : IMqttClientWrapper
             }
             else if (_mqttServerOptions.EnableHeartbeat && IsConnected)
             {
-                foreach (Device device in _deviceProvider.Devices)
+                var publishSuccess = await _clientMqttApplicationMessageListner.OnHeartbeat(device);
+                if (!publishSuccess)
                 {
-                    var publishSuccess = await _clientMqttListener.OnHeartbeat(device);
-                    if (!publishSuccess)
-                    {
-                        await _mqttClient.DisconnectAsync(MqttClientDisconnectOptionsReason.UnspecifiedError, "heartbeat packet send failed");
-                        break;
-                    }
+                    await _mqttClient.DisconnectAsync(MqttClientDisconnectOptionsReason.UnspecifiedError, "heartbeat packet send failed");
+                    break;
                 }
             }
         }

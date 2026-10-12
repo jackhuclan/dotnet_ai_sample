@@ -6,20 +6,20 @@
 public class CommandSet : Dictionary<string, IRemoteCommand>
 {
     /// <summary>
-    /// add a remotecommand to collection. if CommandName exists, the old command with same name will be replaced!
+    /// add a remote command to collection. if CommandPath exists, the old command with same path will be replaced!
     /// </summary>
     /// <param name="remoteCommand"></param>
     public void AddCommand(IRemoteCommand remoteCommand)
     {
-        this[remoteCommand.Descriptor.CommandId] = remoteCommand;
+        this[remoteCommand.Descriptor.CommandPath] = remoteCommand;
     }
 
-    public bool TryGetCommand(string commandName, out IRemoteCommand? command)
+    public bool TryGetCommand(string commandPath, out IRemoteCommand? command)
     {
-        if (!string.IsNullOrWhiteSpace(commandName)
-            && ContainsKey(commandName))
+        if (!string.IsNullOrWhiteSpace(commandPath)
+            && ContainsKey(commandPath))
         {
-            command = this[commandName];
+            command = this[commandPath];
             return true;
         }
 

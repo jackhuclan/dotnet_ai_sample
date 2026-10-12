@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using MQTTnet;
 
-namespace Mega.Platform.Core;
+namespace Mega.Platform.Core.Host;
 
 public static class HostSetup
 {
