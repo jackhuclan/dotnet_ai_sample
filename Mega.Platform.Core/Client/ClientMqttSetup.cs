@@ -19,6 +19,7 @@ public static class ClientMqttSetup
         services.Configure<MqttServerConnectionOptions>(configuration.GetSection(nameof(MqttServerConnectionOptions)));
         services.Configure<DeviceDescriptor>(configuration.GetSection(nameof(DeviceDescriptor)));
         services.AddMqttClient(configuration);
+        services.AddSingleton<IDevice, DefaultDevice>();
         services.AddSingleton<IMqttClientWrapper, MqttClientWrapper>();
         services.AddSingleton<IObjectFactory, ObjectFactory>();
         services.AddSingleton<IMqttMessagePublisher, MqttMessagePublisher>();

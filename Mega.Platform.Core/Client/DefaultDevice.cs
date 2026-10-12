@@ -5,7 +5,7 @@ using Microsoft.Shared.Diagnostics;
 
 namespace Mega.Platform.Core.Client;
 
-public abstract class AbstractDevice : IDevice
+public class DefaultDevice : IDevice
 {
     public string ProductId { get; set; } = string.Empty;
     public string DeviceId { get; set; } = string.Empty;
@@ -28,7 +28,7 @@ public abstract class AbstractDevice : IDevice
     /// </summary>
     public CommandSet Commands { get; } = new();
 
-    protected AbstractDevice(DeviceDescriptor deviceDescriptor,
+    protected DefaultDevice(DeviceDescriptor deviceDescriptor,
        IServiceProvider serviceProvider)
     {
         ApplicationServices = serviceProvider;
@@ -61,7 +61,7 @@ public abstract class AbstractDevice : IDevice
         Throw.IfNullOrEmpty(commandDescriptor.CommandPath);
         Throw.IfNull(command);
 
-        Commands.AddCommand(ObjectFactory.CreateObject<DelegateCommand<AbstractDevice>>(ApplicationServices, this, commandDescriptor, command));
+        Commands.AddCommand(ObjectFactory.CreateObject<DelegateCommand<DefaultDevice>>(ApplicationServices, this, commandDescriptor, command));
     }
 
     /// <summary>

@@ -2,7 +2,7 @@
 
 namespace Mega.Blade;
 
-internal class AOIDevice : AbstractDevice
+internal class AOIDevice : DefaultDevice
 {
     public AOIDevice(DeviceDescriptor deviceDescriptor, IServiceProvider serviceProvider)
         : base(deviceDescriptor, serviceProvider)
