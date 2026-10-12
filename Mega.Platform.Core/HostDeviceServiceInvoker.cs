@@ -20,9 +20,9 @@ internal class HostDeviceServiceInvoker : IDeviceServiceInvoker
     {
         Throw.IfNull(request);
         Throw.IfNullOrEmpty(request.ServiceId);
-        Throw.IfNullOrEmpty(request.TargetProductId);
-        Throw.IfNullOrEmpty(request.TargetDeviceId);
-        Throw.IfNullOrEmpty(request.TargetClientId);
+        Throw.IfNullOrEmpty(request.ServicePath);
+        Throw.IfNullOrEmpty(request.ProductId);
+        Throw.IfNullOrEmpty(request.DeviceId);
 
         var response = await ExecuteServiceInvocation(request);
 
@@ -49,7 +49,7 @@ internal class HostDeviceServiceInvoker : IDeviceServiceInvoker
         }
         catch (Exception ex)
         {
-            _logger.LogError($"{request.DeviceId} - {request.TargetDeviceId}-{ex.Message}");
+            _logger.LogError($"{request.DeviceId} - {request.ServicePath}-{ex.Message}");
             response = new DeviceServiceInvokeResponse
             {
                 Code = ErrorCodes.Sys.FAIL,

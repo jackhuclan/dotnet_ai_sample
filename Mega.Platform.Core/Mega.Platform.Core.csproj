@@ -10,4 +10,8 @@
 		<PackageReference Include="MQTTnet.AspNetCore" Version="5.2.0.1603" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Host\" />
+	</ItemGroup>
+
 </Project>

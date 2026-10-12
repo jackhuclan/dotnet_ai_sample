@@ -1,4 +1,4 @@
-﻿using Mega.Platform.Web.Models;
+﻿using Mega.Platform.Core.Models;
 
 namespace Mega.Platform.Core;
 
