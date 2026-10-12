@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MQTTnet.Diagnostics.Logger;
 
 namespace Mega.Platform.Core.Client;
 

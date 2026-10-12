@@ -19,7 +19,7 @@ public sealed class DeviceChatAgent : DelegatingAIAgent
     }
 
     protected override ValueTask<AgentSession> CreateSessionCoreAsync(CancellationToken cancellationToken = default)
-        => new(new DeviceAgentSession());
+        => new(new DeviceAgentSession(Guid.NewGuid().ToString("N"), "", _deviceDescriptor.ProductId, _deviceDescriptor.DeviceId, "user1"));
 
     protected override ValueTask<JsonElement> SerializeSessionCoreAsync(AgentSession session, JsonSerializerOptions? jsonSerializerOptions = null, CancellationToken cancellationToken = default)
     {
@@ -48,8 +48,8 @@ public sealed class DeviceChatAgent : DelegatingAIAgent
         var invokingContext = new ChatHistoryProvider.InvokingContext(this, session, messages);
         var userAndChatHistoryMessages = await this._chatHistoryProvider.InvokingAsync(invokingContext, cancellationToken);
 
-        // Clone the input messages and turn them into response messages with upper case text.
-        List<ChatMessage> responseMessages = InnerAgent.RunAsync(messages, this.Name).ToList();
+        AgentResponse response = await InnerAgent.RunAsync(messages, session, options, cancellationToken);
+        IList<ChatMessage> responseMessages = response.Messages;
 
         // Notify the session of the input and output messages.
         var invokedContext = new ChatHistoryProvider.InvokedContext(this, session, userAndChatHistoryMessages, responseMessages);
@@ -76,6 +76,12 @@ public sealed class DeviceChatAgent : DelegatingAIAgent
         // Get existing messages from the store
         var invokingContext = new ChatHistoryProvider.InvokingContext(this, session, messages);
         var userAndChatHistoryMessages = await this._chatHistoryProvider.InvokingAsync(invokingContext, cancellationToken);
+
+        var responses = await InnerAgent.RunStreamingAsync(messages, session, options, cancellationToken).ToListAsync();
+        foreach (var update in responses)
+        {
+            //IList<ChatMessage> responseMessages = update.Contents;
+        }
 
         // Clone the input messages and turn them into response messages with upper case text.
         List<ChatMessage> responseMessages = CloneAndToUpperCase(messages, this.Name).ToList();

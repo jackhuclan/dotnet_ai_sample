@@ -4,7 +4,7 @@ public class CommandDescriptor
 {
     public CommandDescriptor(string commandId,
         string commandPath,
-        CommandUsageKind executionScope)
+        CommandUsageScope executionScope)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(commandId);
         ArgumentException.ThrowIfNullOrWhiteSpace(commandPath);
@@ -27,7 +27,7 @@ public class CommandDescriptor
     /// <summary>
     /// 指令应用范围
     /// </summary>
-    public CommandUsageKind UsageScope { get; } = CommandUsageKind.Both;
+    public CommandUsageScope UsageScope { get; } = CommandUsageScope.Both;
 
     public override int GetHashCode() => this.CommandPath.GetHashCode();
 }

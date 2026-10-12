@@ -23,6 +23,7 @@ public static class HostSetup
         services.AddSingleton<IMqttMessageHandlerFactory, MqttMessageHandlerFactory>();
         services.AddSingleton<IDeviceServiceInvoker, HostDeviceServiceInvoker>();
         services.AddSingleton<IMqttMessagePublisher, MqttMessagePublisher>();
+        services.AddSingleton<IDeviceManager, DeviceManager>();
         services.AddSingleton<CameraCommandSet>();
     }
 

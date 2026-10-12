@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Microsoft.Extensions.Logging;
+using MQTTnet;
 
 namespace Mega.Platform.Core.Host.Handler;
 
@@ -14,17 +15,5 @@ internal class ServiceMqttMessageHandler : IMqttMessageHandler
         _deviceServiceInvoker = deviceServiceInvoker;
     }
 
-    public async Task<object> Handle(MqttApplicationMessageReceivedEventArgs args)
-    {
-        var request = JsonSerializer.Deserialize<DeviceServiceInvokeRequest>(args.ApplicationMessage.PayloadSegment);
-        ThrowHelper.ThrowArgumentNullException(request);
-        ThrowHelper.ThrowArgumentNullOrWhiteSpaceException(request.ProductId);
-        ThrowHelper.ThrowArgumentNullOrWhiteSpaceException(request.DeviceId);
-        ThrowHelper.ThrowArgumentNullOrWhiteSpaceException(request.ServiceId);
-        ThrowHelper.ThrowArgumentNullOrWhiteSpaceException(request.TargetProductId);
-        ThrowHelper.ThrowArgumentNullOrWhiteSpaceException(request.TargetDeviceId);
-
-        var response = await _deviceServiceInvoker.InvokeService(request);
-        return response;
-    }
+    public Task<object> Handle(MqttApplicationMessageReceivedEventArgs applicationMessageArgs) => throw new NotImplementedException();
 }

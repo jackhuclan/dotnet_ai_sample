@@ -23,5 +23,5 @@ public interface IDevice
     /// </summary>
     CommandSet Commands { get; }
     void AddCommand(IRemoteCommand remoteCommand);
-    void AddCommand(CommandDescriptor commandDescriptor, CommandFunction command, CommandUsageKind commandUsage = CommandUsageKind.Both)
+    void AddCommand(CommandDescriptor commandDescriptor, CommandFunction command, CommandUsageScope commandUsage = CommandUsageScope.Both);
 }

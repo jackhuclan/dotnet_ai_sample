@@ -1,5 +1,6 @@
 ﻿using Mega.Platform.Core.Client.Command;
 using Mega.Platform.Core.Models;
+using Mega.Platform.Core.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Shared.Diagnostics;
 using MQTTnet;
@@ -34,7 +35,7 @@ public class DefaultClientMqttApplicationMessageListener : IClientMqttApplicatio
 
         if (!reported) return;
 
-        foreach (var command in device.Commands.Where(x => (x.Value.Descriptor.UsageScope & CommandUsageKind.Mqtt) == CommandUsageKind.Mqtt))
+        foreach (var command in device.Commands.Where(x => (x.Value.Descriptor.UsageScope & CommandUsageScope.Mqtt) == CommandUsageScope.Mqtt))
         {
             await SubscribeService(device, command.Value);
         }
@@ -119,32 +120,33 @@ public class DefaultClientMqttApplicationMessageListener : IClientMqttApplicatio
         {
             await Task.Run(() =>
             {
-                var onlineResponse = JsonSerializer.Deserialize<OnlineResponse>(arg.ApplicationMessage.PayloadSegment);
+                var onlineResponse = JsonSerializer.Deserialize<OnlineResponse>(arg.ApplicationMessage.Payload.ToString());
                 if (onlineResponse == null) return;
                 _device.ClientId = arg.ClientId;
                 _logger.LogInformation($"Retrieved {_device.DeviceId}'s clientId={arg.ClientId}");
             });
         }
 
-        if (_services.ContainsKey(arg.ApplicationMessage.Topic))
+        var deviceServiceInvokeRequest = JsonSerializer.Deserialize<DeviceServiceInvokeRequest>(arg.ApplicationMessage.Payload.ToString());
+        if (deviceServiceInvokeRequest == null) return;
+
+        if (_services.ContainsKey(deviceServiceInvokeRequest.ServicePath))
         {
-            var deviceServiceInvokeRequest = JsonSerializer.Deserialize<DeviceServiceInvokeRequest>(arg.ApplicationMessage.PayloadSegment);
-            if (deviceServiceInvokeRequest == null) return;
-            _logger.LogDebug($"MqttClient_ApplicationMessageReceivedAsync-1:{arg.ApplicationMessage.Topic}-{deviceServiceInvokeRequest.DeviceId} -> {deviceServiceInvokeRequest.TargetDeviceId} - {deviceServiceInvokeRequest.ServiceId}");
-            var response = await _services[arg.ApplicationMessage.Topic].Invoke(deviceServiceInvokeRequest);
-            _logger.LogDebug($"MqttClient_ApplicationMessageReceivedAsync-2:{arg.ApplicationMessage.Topic}-{deviceServiceInvokeRequest.DeviceId} -> {deviceServiceInvokeRequest.TargetDeviceId} - {deviceServiceInvokeRequest.ServiceId}");
+            _logger.LogDebug($"MqttClient_ApplicationMessageReceivedAsync-1:{arg.ApplicationMessage.Topic}-{deviceServiceInvokeRequest.DeviceId} -> {deviceServiceInvokeRequest.ServicePath}");
+            var response = await _services[deviceServiceInvokeRequest.ServicePath].Invoke(deviceServiceInvokeRequest);
+            _logger.LogDebug($"MqttClient_ApplicationMessageReceivedAsync-2:{arg.ApplicationMessage.Topic}-{deviceServiceInvokeRequest.DeviceId} -> {deviceServiceInvokeRequest.ServicePath}");
 
             //mqtt 5.0
             if (!string.IsNullOrWhiteSpace(arg.ApplicationMessage.ResponseTopic))
             {
                 await _mqttClient.PublishBinaryAsync(arg.ApplicationMessage.ResponseTopic, JsonSerializer.Serialize(response).GetBytes(), MqttQualityOfServiceLevel.ExactlyOnce);
-                _logger.LogDebug($"MqttClient_ApplicationMessageReceivedAsync-3:{arg.ApplicationMessage.ResponseTopic}-{deviceServiceInvokeRequest.DeviceId} -> {deviceServiceInvokeRequest.TargetDeviceId} - {deviceServiceInvokeRequest.ServiceId}");
+                _logger.LogDebug($"MqttClient_ApplicationMessageReceivedAsync-3:{arg.ApplicationMessage.ResponseTopic}-{deviceServiceInvokeRequest.DeviceId} -> {deviceServiceInvokeRequest.ServicePath}");
             }
             //reply service response to caller
             else if (!string.IsNullOrWhiteSpace(deviceServiceInvokeRequest.ReplyTopic) && response != null)
             {
                 await _mqttClient.PublishBinaryAsync(deviceServiceInvokeRequest.ReplyTopic, JsonSerializer.Serialize(response).GetBytes(), MqttQualityOfServiceLevel.ExactlyOnce);
-                _logger.LogDebug($"MqttClient_ApplicationMessageReceivedAsync-3:{deviceServiceInvokeRequest.ReplyTopic}-{deviceServiceInvokeRequest.DeviceId} -> {deviceServiceInvokeRequest.TargetDeviceId} - {deviceServiceInvokeRequest.ServiceId}");
+                _logger.LogDebug($"MqttClient_ApplicationMessageReceivedAsync-3:{deviceServiceInvokeRequest.ReplyTopic}-{deviceServiceInvokeRequest.DeviceId} -> {deviceServiceInvokeRequest.ServicePath}");
             }
         }
     }

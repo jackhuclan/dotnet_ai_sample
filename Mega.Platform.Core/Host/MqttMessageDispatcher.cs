@@ -1,4 +1,5 @@
 ﻿using MQTTnet;
+using MQTTnet.Protocol;
 
 namespace Mega.Platform.Core.Host;
 

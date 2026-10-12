@@ -55,7 +55,7 @@ public class DefaultDevice : IDevice
     /// <param name="commandDescriptor">指令描述，包含commandPath,即服务的全路径地址</param>
     /// <param name="command">指令动作</param>
     /// <param name="commandUsage">指令用途种类</param>
-    public void AddCommand(CommandDescriptor commandDescriptor, CommandFunction command, CommandUsageKind commandUsage = CommandUsageKind.Both)
+    public void AddCommand(CommandDescriptor commandDescriptor, CommandFunction command, CommandUsageScope commandUsage = CommandUsageScope.Both)
     {
         Throw.IfNullOrEmpty(commandDescriptor.CommandId);
         Throw.IfNullOrEmpty(commandDescriptor.CommandPath);

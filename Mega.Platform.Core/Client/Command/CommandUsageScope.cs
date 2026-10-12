@@ -4,7 +4,7 @@
 /// 指令用途种类
 /// </summary>
 [Flags]
-public enum CommandUsageKind
+public enum CommandUsageScope
 {
     /// <summary>
     /// 默认本机调用

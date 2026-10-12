@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Mega.Platform.Core.Utils;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MQTTnet;
@@ -75,13 +76,13 @@ internal class HostMqttClient : IHostedService
         try
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(_mqttServerOptions.KeepAlivePeriod));
+            cancellationTokenSource.CancelAfter(_mqttServerOptions.KeepAlivePeriod);
             cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cancellationTokenSource.Token);
             _logger.LogInformation($"HostMqttClient is connecting to {_mqttServerOptions.Host}:{_mqttServerOptions.Port}");
 
             var mqttClientOptions = new MqttClientOptionsBuilder()
                 .WithTcpServer(_mqttServerOptions.Host, _mqttServerOptions.Port)
-                .WithKeepAlivePeriod(TimeSpan.FromSeconds(_mqttServerOptions.KeepAlivePeriod))
+                .WithKeepAlivePeriod(_mqttServerOptions.KeepAlivePeriod)
                 .WithProtocolVersion(MQTTnet.Formatter.MqttProtocolVersion.V500)
                 .Build();
 

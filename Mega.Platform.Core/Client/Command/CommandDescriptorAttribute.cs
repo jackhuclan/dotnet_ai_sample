@@ -5,7 +5,7 @@ public class CommandDescriptorAttribute : Attribute
 {
     public CommandDescriptorAttribute(string commandId,
         string commandPath,
-        CommandUsageKind executionScope)
+        CommandUsageScope executionScope)
     {
         Descriptor = new CommandDescriptor(commandId, commandPath, executionScope);
     }

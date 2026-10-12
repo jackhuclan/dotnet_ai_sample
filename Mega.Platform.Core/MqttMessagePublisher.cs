@@ -1,4 +1,7 @@
-﻿using System.Text.Json;
+﻿using MQTTnet;
+using MQTTnet.Protocol;
+using System.Buffers;
+using System.Text.Json;
 
 namespace Mega.Platform.Core;
 
@@ -17,7 +20,7 @@ public class MqttMessagePublisher : IMqttMessagePublisher
 
         _mqttClient.ApplicationMessageReceivedAsync += (arg) =>
         {
-            _asyncTaskWaiter.TrySetResult(_waitingKey, arg.ApplicationMessage.PayloadSegment.ToArray());
+            _asyncTaskWaiter.TrySetResult(_waitingKey, arg.ApplicationMessage.Payload.ToArray());
             return Task.CompletedTask;
         };
     }
@@ -85,7 +88,7 @@ public class MqttMessagePublisher : IMqttMessagePublisher
             });
 
             var result = await _asyncTaskWaiter.ExecuteTaskAsWaiter(_waitingKey, task, cancellationToken);
-            return JsonSerializer.Deserialize<TResponse>(result.ToStr());
+            return JsonSerializer.Deserialize<TResponse>(result.ToString());
         }
         finally
         {

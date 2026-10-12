@@ -1,4 +1,7 @@
-﻿namespace Mega.Platform.Core;
+﻿using MQTTnet;
+using MQTTnet.Protocol;
+
+namespace Mega.Platform.Core;
 
 /// <summary>
 /// mqtt message publisher, 具备请求和获取回复消息功能

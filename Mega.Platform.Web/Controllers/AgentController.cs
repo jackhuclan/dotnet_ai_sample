@@ -1,7 +1,6 @@
 ﻿using Mega.Platform.Core.Client;
 using Mega.Platform.Core.Host.Agent;
 using Mega.Platform.Core.Host.Command;
-using Microsoft.Agents.AI;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.AI;
 using OpenAI;
@@ -54,7 +53,7 @@ public class AgentController : ControllerBase
              .AsAIAgent(
                 name: mainAgentName,
                 model: chatRequest.Model,
-                instructions: "You are a helpful assistant that can control devices and provide information about them."
+                instructions: "You are a helpful assistant that can control devices and provide information about them.",
                 tools: _cameraCommandSet.AsTools()
              );
 
