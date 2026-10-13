@@ -11,10 +11,10 @@ namespace Mega.Platform.Core.Client;
 
 public class DefaultDevice : IDevice
 {
-    public string ProductId { get; set; } = string.Empty;
-    public string DeviceId { get; set; } = string.Empty;
-    public string DeviceName { get; set; } = string.Empty;
-    public string ClientId { get; set; } = string.Empty;
+    public string ProductId { get; }
+    public string DeviceId { get; }
+    public string DeviceName { get; }
+    public string ClientId { get; }
     public IObjectFactory ObjectFactory { get; private set; }
     public IMqttClientWrapper MqttClientWrapper { get; }
     /// <summary>
@@ -36,10 +36,15 @@ public class DefaultDevice : IDevice
     public CommandSet Commands { get; } = new();
 
     protected DefaultDevice(IOptions<DeviceDescriptor> deviceDescriptorOptions,
-       IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider)
     {
         ApplicationServices = serviceProvider;
         DeviceDescriptor = deviceDescriptorOptions.Value;
+        ProductId = DeviceDescriptor.ProductId;
+        DeviceId = DeviceDescriptor.DeviceId;
+        DeviceName = DeviceDescriptor.DeviceName;
+        ClientId = DeviceDescriptor.DeviceId;
+
         _applicationLifetime = serviceProvider.GetRequiredService<IHostApplicationLifetime>();
         MqttClientWrapper = serviceProvider.GetRequiredService<IMqttClientWrapper>();
         ObjectFactory = serviceProvider.GetRequiredService<IObjectFactory>();

@@ -34,7 +34,7 @@ internal class HostDeviceServiceInvoker : IDeviceServiceInvoker
         try
         {
             CancellationTokenSource tokenSource = new CancellationTokenSource();
-            tokenSource.CancelAfter(TimeSpan.FromSeconds(500));
+            //tokenSource.CancelAfter(TimeSpan.FromSeconds(600));
             CancellationToken cancellationToken = tokenSource.Token;
             var requestTopic = request.RequestTopic;
             var replyTopic = request.ReplyTopic;

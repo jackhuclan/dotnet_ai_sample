@@ -1,6 +1,6 @@
 ﻿using Mega.Platform.Core.Models;
 
-namespace Mega.Platform.Core.Client.Command;
+namespace Mega.Platform.Core;
 
 /// <summary>
 /// 指令函数

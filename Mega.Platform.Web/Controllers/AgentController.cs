@@ -13,7 +13,6 @@ using System.Text.Json;
 namespace Mega.Platform.Web.Controllers;
 
 [ApiController]
-[Route("v1/agent")]
 public class AgentController : ControllerBase
 {
     private readonly IAgentManager _agentManager;
@@ -48,7 +47,7 @@ public class AgentController : ControllerBase
             RequestTopic = servicepath,
             ReplyTopic = servicepath + "/reply",
         });
-        var prompt = $"请打开设备{chatRequest.DeviceId}，执行参数deviceServiceInvokeRequest如下：" + Environment.NewLine
+        var prompt = $"{chatRequest.Message}，执行参数deviceServiceInvokeRequest如下：" + Environment.NewLine
             + json;
 
         var response = await agent.RunAsync(prompt, null, null, cancellationToken);

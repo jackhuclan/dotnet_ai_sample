@@ -116,17 +116,17 @@ public class DefaultClientMqttApplicationMessageListener : IClientMqttApplicatio
         Throw.IfNull(_device);
 
         var msg = arg.ApplicationMessage.Payload.ToStr();
-        if (arg.ApplicationMessage.Topic == MqttTopics.OnlineTopicTemplate
-            && arg.ReasonCode == MqttApplicationMessageReceivedReasonCode.Success)
-        {
-            await Task.Run(() =>
-            {
-                var onlineResponse = JsonSerializer.Deserialize<OnlineResponse>(msg);
-                if (onlineResponse == null) return;
-                _device.ClientId = arg.ClientId;
-                _logger.LogInformation($"Retrieved {_device.DeviceId}'s clientId={arg.ClientId}");
-            });
-        }
+        //if (arg.ApplicationMessage.Topic == MqttTopics.OnlineTopicTemplate
+        //    && arg.ReasonCode == MqttApplicationMessageReceivedReasonCode.Success)
+        //{
+        //    await Task.Run(() =>
+        //    {
+        //        var onlineResponse = JsonSerializer.Deserialize<OnlineResponse>(msg);
+        //        if (onlineResponse == null) return;
+        //        _device.ClientId = arg.ClientId;
+        //        _logger.LogInformation($"Retrieved {_device.DeviceId}'s clientId={arg.ClientId}");
+        //    });
+        //}
 
         var deviceServiceInvokeRequest = JsonSerializer.Deserialize<DeviceServiceInvokeRequest>(msg);
         if (deviceServiceInvokeRequest == null) return;

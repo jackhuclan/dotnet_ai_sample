@@ -12,21 +12,22 @@ public partial class Form1 : Form
     {
         InitializeComponent();
         _device = device;
+        Text = $"当前设备：{device.ProductId}/{device.DeviceId}";
     }
 
     private void button1_Click(object sender, EventArgs e)
     {
-        MessageBox.Show("button1_Click!");
+        MessageBox.Show(this, "button1_Click!");
     }
 
     private void button2_Click(object sender, EventArgs e)
     {
-        MessageBox.Show("button2_Click!");
+        MessageBox.Show(this, "button2_Click!");
     }
 
     private void CustomEvent(string eventName, object eventData)
     {
-        MessageBox.Show($"event_name: {eventName}, data: {eventData}");
+        MessageBox.Show(this, $"event_name: {eventName}, data: {eventData}");
     }
 
     private void Form1_Load(object sender, EventArgs e)

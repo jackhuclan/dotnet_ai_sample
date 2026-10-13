@@ -4,10 +4,10 @@ namespace Mega.Platform.Core.Client;
 
 public interface IDevice
 {
-    string ProductId { get; set; }
-    string DeviceId { get; set; }
-    string DeviceName { get; set; }
-    string ClientId { get; set; }
+    string ProductId { get; }
+    string DeviceId { get; }
+    string DeviceName { get; }
+    string ClientId { get; }
     IObjectFactory ObjectFactory { get; }
     IMqttClientWrapper MqttClientWrapper { get; }
     /// <summary>

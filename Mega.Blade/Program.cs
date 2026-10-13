@@ -27,6 +27,12 @@ internal static class Program
                   service.AddMqttCapability(hostBuilderContext.Configuration);
                   service.AddSingleton<IDevice, AOIDevice>();
               })
+              .ConfigureLogging((hostBuilderContext, loggingBuilder) =>
+              {
+                  // NLog: Setup NLog for Dependency injection
+                  //loggingBuilder.cle
+                  //loggingBuilder.AddNLog();
+              })
               .UseWindowsFormsLifetime<Form1>()
               .Build();
 
