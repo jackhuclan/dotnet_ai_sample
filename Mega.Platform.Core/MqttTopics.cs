@@ -2,6 +2,7 @@
 
 public class MqttTopics
 {
+    public const string ALL = "mega/#";
     public const string OnlineTopicTemplate = "mega/login/p/{0}/d/{1}";
     public const string EventTopicTemplate = "mega/event/p/{0}/d/{1}";
     public const string StatusTopicTemplate = "mega/status/p/{0}/d/{1}";

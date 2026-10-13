@@ -8,14 +8,13 @@ internal class MqttMessageDispatcher : IMqttMessageDispatcher
     private readonly Dictionary<string, IMqttMessageHandler> services = new();
     private readonly IMqttClient _mqttClient;
     private readonly IMqttMessageHandlerFactory _agentHandlerFactory;
-    private const string ALL_VEGA_MQTT_MSG = "vega/mqtt/#";
 
     public MqttMessageDispatcher(IMqttClient mqttClient,
         IMqttMessageHandlerFactory agentHandlerFactory)
     {
         _mqttClient = mqttClient;
         _agentHandlerFactory = agentHandlerFactory;
-        services.Add(ALL_VEGA_MQTT_MSG, _agentHandlerFactory.CreateHandler(ALL_VEGA_MQTT_MSG));
+        services.Add(MqttTopics.ALL, _agentHandlerFactory.CreateHandler(MqttTopics.ALL));
     }
 
     public IMqttMessageHandler this[string topic]
@@ -52,7 +51,7 @@ internal class MqttMessageDispatcher : IMqttMessageDispatcher
             }
         }
 
-        return services[ALL_VEGA_MQTT_MSG];
+        return services[MqttTopics.ALL];
     }
 
     private async Task SubscribeService(string serviceTopic, IMqttMessageHandler? mqttMessageHandler)

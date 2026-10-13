@@ -11,19 +11,22 @@ public static class HostSetup
 {
     public static void AddHost(this IServiceCollection services, IConfiguration configuration)
     {
-        Throw.IfNull(configuration.GetSection(nameof(DeviceDescriptor)));
-        Throw.IfNull(configuration.GetSection(nameof(MqttServerConnectionOptions)));
+        Throw.IfNull(configuration.GetSection(nameof(DeviceDescriptor)).Get<DeviceDescriptor>(), "Device descriptor is not configured.");
+        Throw.IfNull(configuration.GetSection(nameof(MqttServerConnectionOptions)).Get<MqttServerConnectionOptions>(), "MQTT server connection options are not configured.");
 
         services.Configure<MqttServerConnectionOptions>(configuration.GetSection(nameof(MqttServerConnectionOptions)));
         services.Configure<DeviceDescriptor>(configuration.GetSection(nameof(DeviceDescriptor)));
 
         services.AddMqttClient();
         services.AddHostedService<HostMqttClient>();
+        services.AddSingleton<IDeviceServiceInvoker, HostDeviceServiceInvoker>();
         services.AddSingleton<IMqttMessageDispatcher, MqttMessageDispatcher>();
         services.AddSingleton<IMqttMessageHandlerFactory, MqttMessageHandlerFactory>();
         services.AddSingleton<IDeviceServiceInvoker, HostDeviceServiceInvoker>();
         services.AddSingleton<IMqttMessagePublisher, MqttMessagePublisher>();
         services.AddSingleton<IDeviceManager, DeviceManager>();
+        services.AddSingleton<IObjectFactory, ObjectFactory>();
+        services.AddSingleton<IAsyncTaskWaiter, AsyncTaskWaiter>();
         services.AddSingleton<CameraCommandSet>();
     }
 

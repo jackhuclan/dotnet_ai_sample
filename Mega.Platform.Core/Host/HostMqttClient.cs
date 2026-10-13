@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MQTTnet;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 
 namespace Mega.Platform.Core.Host;
@@ -62,7 +63,7 @@ internal class HostMqttClient : IHostedService
 
         while (!_isConnected)
         {
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(5));
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(5));
             _logger.LogInformation($"MqttClient is reconnecting...");
@@ -80,7 +81,28 @@ internal class HostMqttClient : IHostedService
             cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cancellationTokenSource.Token);
             _logger.LogInformation($"HostMqttClient is connecting to {_mqttServerOptions.Host}:{_mqttServerOptions.Port}");
 
-            var mqttClientOptions = new MqttClientOptionsBuilder()
+            string certPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _mqttServerOptions.CertPemFilePath);
+            var mqttClientBuilder = new MqttClientOptionsBuilder();
+            if (_mqttServerOptions.UseTls
+                && File.Exists(certPath))
+            {
+                var x509Certificate2s = new X509Certificate2Collection();
+                x509Certificate2s.ImportFromPemFile(certPath);
+                mqttClientBuilder = mqttClientBuilder.WithTlsOptions(o => o.WithClientCertificates(x509Certificate2s));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_mqttServerOptions.ClientId))
+            {
+                mqttClientBuilder.WithClientId(_mqttServerOptions.ClientId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(_mqttServerOptions.UserName)
+                && !string.IsNullOrWhiteSpace(_mqttServerOptions.Password))
+            {
+                mqttClientBuilder.WithCredentials(_mqttServerOptions.UserName, _mqttServerOptions.Password);
+            }
+
+            var mqttClientOptions = mqttClientBuilder
                 .WithTcpServer(_mqttServerOptions.Host, _mqttServerOptions.Port)
                 .WithKeepAlivePeriod(_mqttServerOptions.KeepAlivePeriod)
                 .WithProtocolVersion(MQTTnet.Formatter.MqttProtocolVersion.V500)
