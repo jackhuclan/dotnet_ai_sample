@@ -28,8 +28,8 @@ public class DefaultDevice : IDevice
     private readonly IMqttClient _mqttClient;
     private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly ILoggerFactory _loggerFactory;
-    private ILogger<DefaultDevice> _logger;
-
+    private readonly ILogger<DefaultDevice> _logger;
+    private readonly IClientMqttApplicationMessageListener _clientMqttApplicationMessageListener;
     /// <summary>
     /// 远程服务控制指令集合
     /// </summary>
@@ -46,6 +46,7 @@ public class DefaultDevice : IDevice
         _loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
         _logger = _loggerFactory.CreateLogger<DefaultDevice>();
         _mqttClient = serviceProvider.GetRequiredService<IMqttClient>();
+        _clientMqttApplicationMessageListener = serviceProvider.GetRequiredService<IClientMqttApplicationMessageListener>();
         MqttClientWrapper.OnConnected += async () => await OnMqttConnected();
         MqttClientWrapper.OnDisconnected += async () => await OnMqttDisconnected();
         _applicationLifetime.ApplicationStarted.Register(async () => await OnApplicationStarted());
@@ -89,10 +90,13 @@ public class DefaultDevice : IDevice
         var servicePath = MqttTopics.GetSubscribeTopic(MqttTopics.ServiceTopicTemplate, DeviceDescriptor.ProductId, DeviceDescriptor.DeviceId);
         var subscribeResult = await _mqttClient.SubscribeAsync(servicePath, MqttQualityOfServiceLevel.AtLeastOnce);
         _logger.LogInformation($"SubscribeService: {servicePath},ResultCode={subscribeResult.Items.FirstOrDefault()?.ResultCode}");
+
+        await _clientMqttApplicationMessageListener.OnConnected(this);
     }
 
     protected virtual async Task OnMqttDisconnected()
     {
+        await _clientMqttApplicationMessageListener.OnDisconnected(this);
         await Task.CompletedTask;
     }
 

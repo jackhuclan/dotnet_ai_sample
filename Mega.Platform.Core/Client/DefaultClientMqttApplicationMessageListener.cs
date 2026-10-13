@@ -31,9 +31,9 @@ public class DefaultClientMqttApplicationMessageListener : IClientMqttApplicatio
         _device = device;
         _logger.LogInformation($"OnMqttConnected {device.DeviceId} MqttConnected=true");
 
-        var reported = await OnHeartbeat(device);
+        //var reported = await OnHeartbeat(device);
 
-        if (!reported) return;
+        //if (!reported) return;
 
         foreach (var command in device.Commands.Where(x => (x.Value.Descriptor.UsageScope & CommandUsageScope.Mqtt) == CommandUsageScope.Mqtt))
         {
@@ -41,7 +41,7 @@ public class DefaultClientMqttApplicationMessageListener : IClientMqttApplicatio
         }
     }
 
-    public virtual Task OnDisonnected(IDevice device)
+    public virtual Task OnDisconnected(IDevice device)
     {
         _services.Clear();
         _logger.LogInformation($"Mqtt disconnected on {device.DeviceId}!");
@@ -115,19 +115,20 @@ public class DefaultClientMqttApplicationMessageListener : IClientMqttApplicatio
     {
         Throw.IfNull(_device);
 
+        var msg = arg.ApplicationMessage.Payload.ToStr();
         if (arg.ApplicationMessage.Topic == MqttTopics.OnlineTopicTemplate
             && arg.ReasonCode == MqttApplicationMessageReceivedReasonCode.Success)
         {
             await Task.Run(() =>
             {
-                var onlineResponse = JsonSerializer.Deserialize<OnlineResponse>(arg.ApplicationMessage.Payload.ToString());
+                var onlineResponse = JsonSerializer.Deserialize<OnlineResponse>(msg);
                 if (onlineResponse == null) return;
                 _device.ClientId = arg.ClientId;
                 _logger.LogInformation($"Retrieved {_device.DeviceId}'s clientId={arg.ClientId}");
             });
         }
 
-        var deviceServiceInvokeRequest = JsonSerializer.Deserialize<DeviceServiceInvokeRequest>(arg.ApplicationMessage.Payload.ToString());
+        var deviceServiceInvokeRequest = JsonSerializer.Deserialize<DeviceServiceInvokeRequest>(msg);
         if (deviceServiceInvokeRequest == null) return;
 
         if (_services.ContainsKey(deviceServiceInvokeRequest.ServicePath))

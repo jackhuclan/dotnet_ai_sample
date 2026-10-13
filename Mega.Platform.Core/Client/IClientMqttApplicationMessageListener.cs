@@ -26,7 +26,7 @@ public interface IClientMqttApplicationMessageListener
     /// </summary>
     /// <param name="device"></param>
     /// <returns></returns>
-    Task OnDisonnected(IDevice device);
+    Task OnDisconnected(IDevice device);
 
     /// <summary>
     /// 上报心跳事件

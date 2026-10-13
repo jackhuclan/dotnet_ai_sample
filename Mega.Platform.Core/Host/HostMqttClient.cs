@@ -49,7 +49,10 @@ internal class HostMqttClient : IHostedService
 
     private async Task _mqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
     {
-        var response = await _agentMqttMessageDispatcher.SelectHandler(arg.ApplicationMessage.Topic).Handle(arg);
+        var handler = _agentMqttMessageDispatcher.SelectHandler(arg.ApplicationMessage.Topic);
+        if (handler == null) return;
+
+        var response = await handler.Handle(arg);
         if (response == null) response = new { Code = "FAIL", Message = "UNHANDLED ERROR" };
         await _mqttClient.PublishBinaryAsync(arg.ApplicationMessage.ResponseTopic,
              JsonSerializer.Serialize(response).GetBytes(),

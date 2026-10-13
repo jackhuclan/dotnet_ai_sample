@@ -1,11 +1,14 @@
-﻿using Mega.Platform.Core.Client;
+﻿using Mega.Platform.Core;
 using Mega.Platform.Core.Host.Agent;
 using Mega.Platform.Core.Host.Command;
+using Mega.Platform.Core.Models;
+using Microsoft.Agents.AI;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using OpenAI.Responses;
 using System.ClientModel;
+using System.Text.Json;
 
 namespace Mega.Platform.Web.Controllers;
 
@@ -31,19 +34,31 @@ public class AgentController : ControllerBase
     {
         var mainAgentName = $"{chatRequest.ProductId}_{chatRequest.DeviceId}_main_agent";
         var agent = _agentManager.GetOrCreateAgent(mainAgentName, CreateAgent);
-        if (!_sessionManager.TryGetSession(chatRequest.SessionId, out DeviceAgentSession session))
+        //if (!_sessionManager.TryGetSession(chatRequest.SessionId, out DeviceAgentSession session))
+        //{
+        //    session = (DeviceAgentSession)await agent.CreateSessionAsync(cancellationToken);
+        //}
+        var servicepath = MqttTopics.GetSubscribeTopic(MqttTopics.ServiceTopicTemplate, chatRequest.ProductId, chatRequest.DeviceId);
+        var json = JsonSerializer.Serialize(new DeviceServiceInvokeRequest
         {
-            session = (DeviceAgentSession)await agent.CreateSessionAsync(cancellationToken);
-        }
+            ServiceId = "camera",
+            ServicePath = "aoi/form1/button1_Click",
+            ProductId = chatRequest.ProductId,
+            DeviceId = chatRequest.DeviceId,
+            RequestTopic = servicepath,
+            ReplyTopic = servicepath + "/reply",
+        });
+        var prompt = $"请打开设备{chatRequest.DeviceId}，执行参数deviceServiceInvokeRequest如下：" + Environment.NewLine
+            + json;
 
-        var response = await agent.RunAsync("请打开设备001", session, null, cancellationToken);
+        var response = await agent.RunAsync(prompt, null, null, cancellationToken);
         return new ChatResponse
         {
             Event = "chat_response",
             Data = response.Text,
         };
 
-        DeviceChatAgent CreateAgent()
+        AIAgent CreateAgent()
         {
             var envSetting = new EnvSetting();
             var chatClientAgent = new OpenAIClient(new ApiKeyCredential(envSetting.OPENAI_API_KEY), new OpenAIClientOptions
@@ -57,13 +72,13 @@ public class AgentController : ControllerBase
                 tools: _cameraCommandSet.AsTools()
              );
 
-            var agent = new DeviceChatAgent(chatClientAgent, new DeviceDescriptor
-            {
-                ProductId = chatRequest.ProductId,
-                DeviceId = chatRequest.DeviceId,
-            });
+            //var agent = new DeviceChatAgent(chatClientAgent, new DeviceDescriptor
+            //{
+            //    ProductId = chatRequest.ProductId,
+            //    DeviceId = chatRequest.DeviceId,
+            //});
 
-            return agent;
+            return chatClientAgent;
         }
 
     }

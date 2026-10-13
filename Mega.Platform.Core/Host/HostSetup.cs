@@ -1,4 +1,5 @@
 ﻿using Mega.Platform.Core.Client;
+using Mega.Platform.Core.Host.Agent;
 using Mega.Platform.Core.Host.Command;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +28,8 @@ public static class HostSetup
         services.AddSingleton<IDeviceManager, DeviceManager>();
         services.AddSingleton<IObjectFactory, ObjectFactory>();
         services.AddSingleton<IAsyncTaskWaiter, AsyncTaskWaiter>();
+        services.AddSingleton<IAgentManager, AgentManager>();
+        services.AddSingleton<ISessionManager, SessionManager>();
         services.AddSingleton<CameraCommandSet>();
     }
 

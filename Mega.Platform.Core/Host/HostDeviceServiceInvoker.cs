@@ -31,36 +31,30 @@ internal class HostDeviceServiceInvoker : IDeviceServiceInvoker
 
     private async Task<DeviceServiceInvokeResponse> ExecuteServiceInvocation(DeviceServiceInvokeRequest request)
     {
-        var response = new DeviceServiceInvokeResponse();
-
         try
         {
             CancellationTokenSource tokenSource = new CancellationTokenSource();
-            tokenSource.CancelAfter(TimeSpan.FromSeconds(5));
+            tokenSource.CancelAfter(TimeSpan.FromSeconds(500));
             CancellationToken cancellationToken = tokenSource.Token;
             var requestTopic = request.RequestTopic;
             var replyTopic = request.ReplyTopic;
-            var invokeResult = await _mqttMessagePublisher.Publish<DeviceServiceInvokeRequest, DeviceServiceInvokeResponse>(requestTopic, replyTopic, request);
-            if (invokeResult == null)
+
+            var response = await _mqttMessagePublisher.Publish<DeviceServiceInvokeRequest, DeviceServiceInvokeResponse>(requestTopic, replyTopic, request) ?? new DeviceServiceInvokeResponse()
             {
-                response.Code = ErrorCodes.Sys.FAIL;
-                response.Message = "调用服务时返回类型不正确";
-            }
+                Code = ErrorCodes.Sys.FAIL,
+                Message = "调用服务时返回类型不正确"
+            };
+
+            return response;
         }
         catch (Exception ex)
         {
             _logger.LogError($"{request.DeviceId} - {request.ServicePath}-{ex.Message}");
-            response = new DeviceServiceInvokeResponse
+            return new DeviceServiceInvokeResponse
             {
                 Code = ErrorCodes.Sys.FAIL,
                 Message = ex.Message
             };
         }
-
-        return response ?? new DeviceServiceInvokeResponse()
-        {
-            Code = ErrorCodes.Sys.FAIL,
-            Message = ErrorCodes.Sys.UNKNOWN_MESSAGE
-        };
     }
 }

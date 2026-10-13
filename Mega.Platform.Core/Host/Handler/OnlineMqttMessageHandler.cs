@@ -22,7 +22,7 @@ internal class OnlineMqttMessageHandler : IMqttMessageHandler
 
     public async Task<object> Handle(MqttApplicationMessageReceivedEventArgs args)
     {
-        var onlineRequest = JsonSerializer.Deserialize<OnlineRequest>(args.ApplicationMessage.Payload.ToString());
+        var onlineRequest = JsonSerializer.Deserialize<OnlineRequest>(args.ApplicationMessage.Payload.ToStr());
         if (onlineRequest != null)
         {
             if (onlineRequest.Connected)

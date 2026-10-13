@@ -1,6 +1,8 @@
-﻿namespace Mega.Platform.Core.Host.Agent;
+﻿using Microsoft.Agents.AI;
+
+namespace Mega.Platform.Core.Host.Agent;
 
 public interface IAgentManager
 {
-    DeviceChatAgent GetOrCreateAgent(string agentId, Func<DeviceChatAgent> createAgent);
+    AIAgent GetOrCreateAgent(string agentId, Func<AIAgent> createAgent);
 }
