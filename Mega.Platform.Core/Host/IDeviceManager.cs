@@ -2,7 +2,7 @@
 
 namespace Mega.Platform.Core.Host;
 
-internal interface IDeviceManager
+public interface IDeviceManager
 {
     void AddDevice(DeviceDescriptor deviceDescriptor);
     void RemoveDevice(string deviceId);

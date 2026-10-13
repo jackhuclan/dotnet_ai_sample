@@ -1,5 +1,6 @@
 
 using Mega.Platform.Core.Host;
+using NLog.Web;
 
 namespace Mega.Platform.Web;
 
@@ -17,6 +18,16 @@ public class Program
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
         builder.Services.AddHost(builder.Configuration);
+
+
+        // NLog: Setup NLog for Dependency injection
+        builder.Logging.ClearProviders();
+        //builder.Logging.AddConsole();
+        builder.Services.AddLogging(logging =>
+        {
+            logging.AddNLogWeb("./NLog.config");
+        });
+        builder.Host.UseNLog();
 
         var app = builder.Build();
 

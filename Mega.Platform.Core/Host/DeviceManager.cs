@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 
 namespace Mega.Platform.Core.Host;
 
-internal class DeviceManager : IDeviceManager
+public class DeviceManager : IDeviceManager
 {
     private readonly ConcurrentDictionary<string, DeviceDescriptor> _devices = new();
 

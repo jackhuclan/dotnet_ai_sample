@@ -31,9 +31,9 @@ public class DefaultClientMqttApplicationMessageListener : IClientMqttApplicatio
         _device = device;
         _logger.LogInformation($"OnMqttConnected {device.DeviceId} MqttConnected=true");
 
-        //var reported = await OnHeartbeat(device);
+        var reported = await OnHeartbeat(device);
 
-        //if (!reported) return;
+        if (!reported) return;
 
         foreach (var command in device.Commands.Where(x => (x.Value.Descriptor.UsageScope & CommandUsageScope.Mqtt) == CommandUsageScope.Mqtt))
         {

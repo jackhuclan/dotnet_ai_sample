@@ -31,13 +31,8 @@ internal class MqttMessageDispatcher : IMqttMessageDispatcher
         await SubscribeService(MqttTopics.GetSubscribeTopic(MqttTopics.PropertyTopicTemplate), _agentHandlerFactory.CreateHandler(MqttTopics.PropertyTopicTemplate));
     }
 
-    public IMqttMessageHandler? SelectHandler(string topic)
+    public IMqttMessageHandler SelectHandler(string topic)
     {
-        if (MqttTopicFilterComparer.Compare(topic, MqttTopics.GetReplySubscribeTopic(MqttTopics.ServiceReplyTopicTemplate)) == MqttTopicFilterCompareResult.IsMatch)
-        {
-            return null;
-        }
-
         var subscribeTopics = new List<string>()
         {
             MqttTopics.GetSubscribeTopic(MqttTopics.OnlineTopicTemplate),

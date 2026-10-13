@@ -25,16 +25,17 @@ internal class OnlineMqttMessageHandler : IMqttMessageHandler
         var onlineRequest = JsonSerializer.Deserialize<OnlineRequest>(args.ApplicationMessage.Payload.ToStr());
         if (onlineRequest != null)
         {
+            args.IsHandled = true;
             if (onlineRequest.Connected)
             {
                 var onlineResponse = RegisterDevice(onlineRequest, args);
-                args.ApplicationMessage.PayloadSegment = JsonSerializer.Serialize(onlineResponse).GetBytes();
+                //args.ApplicationMessage.PayloadSegment = JsonSerializer.Serialize(onlineResponse).GetBytes();
                 return onlineResponse;
             }
             else
             {
                 var onlineResponse = UnregisterDevice(onlineRequest);
-                args.ApplicationMessage.PayloadSegment = JsonSerializer.Serialize(onlineResponse).GetBytes();
+                //args.ApplicationMessage.PayloadSegment = JsonSerializer.Serialize(onlineResponse).GetBytes();
                 return onlineResponse;
             }
         }
@@ -57,14 +58,14 @@ internal class OnlineMqttMessageHandler : IMqttMessageHandler
     {
         if (!_deviceManager.TryGetDevice(onlineRequest.DeviceId, out var existingDevice))
         {
-            var deviceDescriptor = new DeviceDescriptor
+            existingDevice = new DeviceDescriptor
             {
                 ProductId = onlineRequest.ProductId,
                 DeviceId = onlineRequest.DeviceId,
                 DeviceName = onlineRequest.DeviceName,
             };
 
-            _deviceManager.AddDevice(deviceDescriptor);
+            _deviceManager.AddDevice(existingDevice);
         }
 
         return new OnlineResponse

@@ -4,9 +4,6 @@ namespace Mega.Platform.Web.Controllers;
 
 public class ChatRequest
 {
-    [JsonPropertyName("product_id")]
-    public string ProductId { get; set; } = string.Empty;
-
     [JsonPropertyName("device_id")]
     public string DeviceId { get; set; } = string.Empty;
 
