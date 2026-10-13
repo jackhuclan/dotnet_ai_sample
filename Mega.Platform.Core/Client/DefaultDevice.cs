@@ -1,8 +1,11 @@
 ﻿using Mega.Platform.Core.Client.Command;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Shared.Diagnostics;
+using MQTTnet;
+using MQTTnet.Protocol;
 
 namespace Mega.Platform.Core.Client;
 
@@ -22,7 +25,10 @@ public class DefaultDevice : IDevice
     /// 设备描述符
     /// </summary>
     public DeviceDescriptor DeviceDescriptor { get; private set; }
+    private readonly IMqttClient _mqttClient;
     private readonly IHostApplicationLifetime _applicationLifetime;
+    private readonly ILoggerFactory _loggerFactory;
+    private ILogger<DefaultDevice> _logger;
 
     /// <summary>
     /// 远程服务控制指令集合
@@ -37,6 +43,11 @@ public class DefaultDevice : IDevice
         _applicationLifetime = serviceProvider.GetRequiredService<IHostApplicationLifetime>();
         MqttClientWrapper = serviceProvider.GetRequiredService<IMqttClientWrapper>();
         ObjectFactory = serviceProvider.GetRequiredService<IObjectFactory>();
+        _loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+        _logger = _loggerFactory.CreateLogger<DefaultDevice>();
+        _mqttClient = serviceProvider.GetRequiredService<IMqttClient>();
+        MqttClientWrapper.OnConnected += async () => await OnMqttConnected();
+        MqttClientWrapper.OnDisconnected += async () => await OnMqttDisconnected();
         _applicationLifetime.ApplicationStarted.Register(async () => await OnApplicationStarted());
         _applicationLifetime.ApplicationStopping.Register(async () => await OnApplicationStopping());
     }
@@ -71,6 +82,17 @@ public class DefaultDevice : IDevice
     protected virtual async Task OnApplicationStarted()
     {
         _ = MqttClientWrapper.ConnectMqtt(this, _applicationLifetime.ApplicationStarted);
+    }
+
+    protected virtual async Task OnMqttConnected()
+    {
+        var servicePath = MqttTopics.GetSubscribeTopic(MqttTopics.ServiceTopicTemplate, DeviceDescriptor.ProductId, DeviceDescriptor.DeviceId);
+        var subscribeResult = await _mqttClient.SubscribeAsync(servicePath, MqttQualityOfServiceLevel.AtLeastOnce);
+        _logger.LogInformation($"SubscribeService: {servicePath},ResultCode={subscribeResult.Items.FirstOrDefault()?.ResultCode}");
+    }
+
+    protected virtual async Task OnMqttDisconnected()
+    {
         await Task.CompletedTask;
     }
 
