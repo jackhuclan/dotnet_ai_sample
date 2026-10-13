@@ -102,7 +102,6 @@ public class DefaultDevice : IDevice
     protected virtual async Task OnMqttDisconnected()
     {
         await _clientMqttApplicationMessageListener.OnDisconnected(this);
-        await Task.CompletedTask;
     }
 
     /// <summary>
