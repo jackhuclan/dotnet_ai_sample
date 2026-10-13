@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/docs/">
+    <File Path="docs/Docker 安装 EMQX.md" />
+  </Folder>
   <Folder Name="/share/">
     <Project Path="ConsoleReactiveComponents/ConsoleReactiveComponents.csproj" />
     <Project Path="ConsoleReactiveFramework/ConsoleReactiveFramework.csproj" />

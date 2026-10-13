@@ -9,7 +9,7 @@ public class MqttClientWrapper : IMqttClientWrapper
 {
     private volatile bool _isConnected = false;
     private readonly IMqttClient _mqttClient;
-    private readonly IClientMqttApplicationMessageListener _clientMqttApplicationMessageListner;
+    private readonly IClientMqttApplicationMessageListener _clientMqttApplicationMessageListener;
     private readonly IMqttClientLogger _mqttClientLogger;
     private readonly ILogger<MqttClientWrapper> _logger;
     private readonly MqttServerConnectionOptions _mqttServerOptions;
@@ -45,10 +45,10 @@ public class MqttClientWrapper : IMqttClientWrapper
         IMqttClientLogger mqttClientLogger)
     {
         _mqttClient = mqttClient;
-        _clientMqttApplicationMessageListner = clientMqttApplicationMessageListner;
+        _clientMqttApplicationMessageListener = clientMqttApplicationMessageListner;
         _mqttClientLogger = mqttClientLogger;
         _mqttServerOptions = options.Value;
-        mqttClient.ApplicationMessageReceivedAsync += arg => _clientMqttApplicationMessageListner.OnApplicationMessageReceivedAsync(arg);
+        mqttClient.ApplicationMessageReceivedAsync += arg => _clientMqttApplicationMessageListener.OnApplicationMessageReceivedAsync(arg);
         mqttClient.DisconnectedAsync += MqttClient_DisconnectedAsync;
         _periodicTimer = new PeriodicTimer(_mqttServerOptions.HeartbeatPeriod);
         _logger = loggerFactory.CreateLogger<MqttClientWrapper>();
@@ -70,7 +70,7 @@ public class MqttClientWrapper : IMqttClientWrapper
             }
             else if (_mqttServerOptions.EnableHeartbeat && IsConnected)
             {
-                var publishSuccess = await _clientMqttApplicationMessageListner.OnHeartbeat(device);
+                var publishSuccess = await _clientMqttApplicationMessageListener.OnHeartbeat(device);
                 if (!publishSuccess)
                 {
                     await _mqttClient.DisconnectAsync(MqttClientDisconnectOptionsReason.UnspecifiedError, "heartbeat packet send failed");

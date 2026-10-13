@@ -13,8 +13,8 @@ public static class ClientMqttSetup
     /// <param name="configuration"></param>
     public static void AddMqttCapability(this IServiceCollection services, IConfiguration configuration)
     {
-        Throw.IfNull(configuration.GetSection(nameof(DeviceDescriptor)));
-        Throw.IfNull(configuration.GetSection(nameof(MqttServerConnectionOptions)));
+        Throw.IfNull(configuration.GetSection(nameof(DeviceDescriptor)).Get<DeviceDescriptor>(), "Device descriptor is not configured.");
+        Throw.IfNull(configuration.GetSection(nameof(MqttServerConnectionOptions)).Get<MqttServerConnectionOptions>(), "MQTT server connection options are not configured.");
 
         services.Configure<MqttServerConnectionOptions>(configuration.GetSection(nameof(MqttServerConnectionOptions)));
         services.Configure<DeviceDescriptor>(configuration.GetSection(nameof(DeviceDescriptor)));

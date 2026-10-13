@@ -1,6 +1,7 @@
 ﻿using Mega.Platform.Core.Client.Command;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Microsoft.Shared.Diagnostics;
 
 namespace Mega.Platform.Core.Client;
@@ -28,11 +29,11 @@ public class DefaultDevice : IDevice
     /// </summary>
     public CommandSet Commands { get; } = new();
 
-    protected DefaultDevice(DeviceDescriptor deviceDescriptor,
+    protected DefaultDevice(IOptions<DeviceDescriptor> deviceDescriptorOptions,
        IServiceProvider serviceProvider)
     {
         ApplicationServices = serviceProvider;
-        DeviceDescriptor = deviceDescriptor;
+        DeviceDescriptor = deviceDescriptorOptions.Value;
         _applicationLifetime = serviceProvider.GetRequiredService<IHostApplicationLifetime>();
         MqttClientWrapper = serviceProvider.GetRequiredService<IMqttClientWrapper>();
         ObjectFactory = serviceProvider.GetRequiredService<IObjectFactory>();
