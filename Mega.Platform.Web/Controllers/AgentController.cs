@@ -32,6 +32,9 @@ public class AgentController : ControllerBase
         _cameraCommandSet = cameraCommandSet;
     }
 
+    [HttpGet("/devices")]
+    public async Task<IReadOnlyList<string>> GetDevices() => _deviceManager.DeviceIds;
+
     [HttpPost("/chat")]
     public async Task<ChatResponse> Chat([FromBody] ChatRequest chatRequest, CancellationToken cancellationToken)
     {
@@ -39,7 +42,7 @@ public class AgentController : ControllerBase
         {
             return new ChatResponse
             {
-                Event = "chat_response",
+                Event = "error",
                 Data = $"Device with ID {chatRequest.DeviceId} not found."
             };
         }

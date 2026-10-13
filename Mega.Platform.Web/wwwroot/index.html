@@ -164,6 +164,7 @@ body.collapsed .sidebar{margin-left:-260px;}
 }
 .model-select:focus{border-color:var(--accent);}
 .model-select option{background:var(--bg-elev);color:var(--text);}
+.device-select{max-width:120px;}
 
 /* 滚动容器 */
 .scroll{flex:1;overflow-y:auto;overflow-x:hidden;}
@@ -433,6 +434,7 @@ html[data-theme="dark"] .tok-n{color:#d19a66;}
   .composer-wrap{padding:6px 14px 12px;}
   .empty{padding-top:6vh;}
   .model-select{max-width:150px;}
+  .device-select{max-width:96px;}
   .msg-actions{opacity:1;}
 }
 </style>
@@ -456,6 +458,9 @@ html[data-theme="dark"] .tok-n{color:#d19a66;}
 <main class="main">
   <header class="topbar">
     <button class="icon-btn" id="btnToggleSidebar" type="button" title="展开 / 收起侧边栏">☰</button>
+    <span class="model-wrap">
+      <select class="model-select device-select" id="deviceSelect" title="选择设备"></select>
+    </span>
     <span class="model-wrap">
       <select class="model-select" id="modelSelect" title="选择模型"></select>
     </span>
@@ -499,6 +504,9 @@ const CONFIG = {
   ],
   defaultModel: "deepseek-flash",
 
+  // 设备列表来自 AgentController 的 GET /devices，优先选中这个设备。
+  defaultDevice: "M001",
+
   // 如果后端需要鉴权，在这里加请求头，例如：
   // headers: { "Authorization": "Bearer sk-xxxxxxxx" }
   headers: {},
@@ -528,6 +536,7 @@ const LS_SESSIONS = "aoi_chat.sessions.v1";
 const LS_CURRENT  = "aoi_chat.current.v1";
 const LS_THEME    = "aoi_chat.theme.v1";
 const LS_MODEL    = "aoi_chat.model.v1";
+const LS_DEVICE   = "aoi_chat.device.v1";
 const DEFAULT_TITLE = "新对话";
 
 const state = {
@@ -550,6 +559,7 @@ const messagesEl   = $("messages");
 const scrollEl     = $("scroll");
 const sessionListEl= $("sessionList");
 const modelSelect  = $("modelSelect");
+const deviceSelect = $("deviceSelect");
 const inputEl      = $("input");
 const btnSend      = $("btnSend");
 const btnNew       = $("btnNew");
@@ -1279,8 +1289,12 @@ function buildPayload(session){
 
   if (CONFIG.systemPrompt) msgs.unshift({ role: "system", content: CONFIG.systemPrompt });
 
-  const body = { model: session.model, messages: msgs, stream: !!CONFIG.stream };
-  return Object.assign(body, CONFIG.extraBody || {});
+  const body = Object.assign(
+    { model: session.model, messages: msgs, stream: !!CONFIG.stream },
+    CONFIG.extraBody || {}
+  );
+  body.device_id = deviceSelect.value || CONFIG.defaultDevice;
+  return body;
 }
 
 function httpHint(status){
@@ -1606,6 +1620,10 @@ modelSelect.addEventListener("change", () => {
   try{ localStorage.setItem(LS_MODEL, modelSelect.value); }catch(_){}
 });
 
+deviceSelect.addEventListener("change", () => {
+  try{ localStorage.setItem(LS_DEVICE, deviceSelect.value); }catch(_){}
+});
+
 // 侧边栏开合
 btnToggle.addEventListener("click", () => {
   document.body.classList.toggle("collapsed");
@@ -1654,9 +1672,63 @@ function initModels(){
   });
 }
 
+function setDeviceOptions(ids){
+  deviceSelect.innerHTML = "";
+  ids.forEach((id) => {
+    const o = document.createElement("option");
+    o.value = id;
+    o.textContent = id;
+    deviceSelect.appendChild(o);
+  });
+  let saved = CONFIG.defaultDevice;
+  try{ saved = localStorage.getItem(LS_DEVICE) || CONFIG.defaultDevice; }catch(_){}
+  if (ids.indexOf(saved) < 0){
+    saved = ids.indexOf(CONFIG.defaultDevice) >= 0 ? CONFIG.defaultDevice : ids[0];
+  }
+  deviceSelect.value = saved;
+  deviceSelect.disabled = false;
+  deviceSelect.title = "选择设备";
+}
+
+async function initDevices(){
+  deviceSelect.innerHTML = "";
+  deviceSelect.disabled = true;
+  const loading = document.createElement("option");
+  loading.value = "";
+  loading.textContent = "加载中…";
+  deviceSelect.appendChild(loading);
+
+  try{
+    const res = await fetch(new URL("/devices", CONFIG.endpoint), {
+      headers: Object.assign({ "Accept": "application/json" }, CONFIG.headers || {})
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const ids = Array.isArray(data) ? data.filter((id) => typeof id === "string" && id) : [];
+    if (!ids.length){
+      deviceSelect.innerHTML = "";
+      const empty = document.createElement("option");
+      empty.value = "";
+      empty.textContent = "暂无设备";
+      deviceSelect.appendChild(empty);
+      deviceSelect.title = "GET /devices 没有返回设备";
+      return;
+    }
+    setDeviceOptions(ids);
+  }catch(err){
+    deviceSelect.innerHTML = "";
+    const failed = document.createElement("option");
+    failed.value = "";
+    failed.textContent = "设备加载失败";
+    deviceSelect.appendChild(failed);
+    deviceSelect.title = err instanceof Error ? err.message : "设备加载失败";
+  }
+}
+
 function init(){
   initTheme();
   initModels();
+  initDevices();
   loadState();
   syncModelSelect();
   // 初始：桌面展开，移动端收起

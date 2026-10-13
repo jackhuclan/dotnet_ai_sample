@@ -7,6 +7,8 @@ public class DeviceManager : IDeviceManager
 {
     private readonly ConcurrentDictionary<string, DeviceDescriptor> _devices = new();
 
+    public IReadOnlyList<string> DeviceIds => _devices.Keys.ToList();
+
     public bool TryGetDevice(string deviceId, out DeviceDescriptor deviceDescriptor)
     {
         return _devices.TryGetValue(deviceId, out deviceDescriptor!);

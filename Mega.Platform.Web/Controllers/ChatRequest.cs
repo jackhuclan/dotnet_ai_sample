@@ -11,7 +11,7 @@ public class ChatRequest
     public string UserId { get; set; } = string.Empty;
 
     [JsonPropertyName("session_id")]
-    public string SessionId { get; set; } = string.Empty;
+    public string SessionId { get; set; } = Guid.NewGuid().ToString("N");
 
     [JsonPropertyName("message")]
     public string Message { get; set; } = string.Empty;
