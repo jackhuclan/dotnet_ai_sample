@@ -504,8 +504,9 @@ const CONFIG = {
   ],
   defaultModel: "deepseek-flash",
 
-  // 设备列表来自 AgentController 的 GET /devices，优先选中这个设备。
+  // 设备列表来自 GET /devices，每 devicePollMs 毫秒刷新一次。列表里有 M001 时优先选中它。
   defaultDevice: "M001",
+  devicePollMs: 1000,
 
   // 如果后端需要鉴权，在这里加请求头，例如：
   // headers: { "Authorization": "Bearer sk-xxxxxxxx" }
@@ -1672,57 +1673,90 @@ function initModels(){
   });
 }
 
-function setDeviceOptions(ids){
-  deviceSelect.innerHTML = "";
-  ids.forEach((id) => {
-    const o = document.createElement("option");
-    o.value = id;
-    o.textContent = id;
-    deviceSelect.appendChild(o);
-  });
-  let saved = CONFIG.defaultDevice;
-  try{ saved = localStorage.getItem(LS_DEVICE) || CONFIG.defaultDevice; }catch(_){}
-  if (ids.indexOf(saved) < 0){
-    saved = ids.indexOf(CONFIG.defaultDevice) >= 0 ? CONFIG.defaultDevice : ids[0];
-  }
-  deviceSelect.value = saved;
-  deviceSelect.disabled = false;
-  deviceSelect.title = "选择设备";
+let devicePollTimer = null;
+let devicePollBusy = false;
+let deviceListReady = false;
+let deviceListKey = "";
+
+function chooseDevice(ids){
+  const current = deviceSelect.value;
+  if (current && ids.indexOf(current) >= 0) return current;
+  let saved = "";
+  try{ saved = localStorage.getItem(LS_DEVICE) || ""; }catch(_){}
+  if (saved && ids.indexOf(saved) >= 0) return saved;
+  if (ids.indexOf(CONFIG.defaultDevice) >= 0) return CONFIG.defaultDevice;
+  return ids[0];
 }
 
-async function initDevices(){
+function renderDevicePlaceholder(text, title){
+  const key = "placeholder:" + text;
+  if (deviceListKey === key){
+    deviceSelect.title = title;
+    return;
+  }
   deviceSelect.innerHTML = "";
+  const option = document.createElement("option");
+  option.value = "";
+  option.textContent = text;
+  deviceSelect.appendChild(option);
   deviceSelect.disabled = true;
-  const loading = document.createElement("option");
-  loading.value = "";
-  loading.textContent = "加载中…";
-  deviceSelect.appendChild(loading);
+  deviceSelect.title = title;
+  deviceListKey = key;
+}
 
+function setDeviceOptions(ids){
+  const key = ids.join("\0");
+  const chosen = chooseDevice(ids);
+  if (key !== deviceListKey){
+    deviceSelect.innerHTML = "";
+    ids.forEach((id) => {
+      const option = document.createElement("option");
+      option.value = id;
+      option.textContent = id;
+      deviceSelect.appendChild(option);
+    });
+    deviceListKey = key;
+  }
+  if (deviceSelect.value !== chosen){
+    deviceSelect.value = chosen;
+    try{ localStorage.setItem(LS_DEVICE, chosen); }catch(_){}
+  }
+  deviceSelect.disabled = false;
+  deviceSelect.title = "选择设备";
+  deviceListReady = true;
+}
+
+async function refreshDevices(){
+  if (devicePollBusy) return;
+  devicePollBusy = true;
   try{
     const res = await fetch(new URL("/devices", CONFIG.endpoint), {
-      headers: Object.assign({ "Accept": "application/json" }, CONFIG.headers || {})
+      headers: Object.assign({ "Accept": "application/json" }, CONFIG.headers || {}),
+      cache: "no-store"
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
     const ids = Array.isArray(data) ? data.filter((id) => typeof id === "string" && id) : [];
     if (!ids.length){
-      deviceSelect.innerHTML = "";
-      const empty = document.createElement("option");
-      empty.value = "";
-      empty.textContent = "暂无设备";
-      deviceSelect.appendChild(empty);
-      deviceSelect.title = "GET /devices 没有返回设备";
+      renderDevicePlaceholder("暂无设备", "GET /devices 没有返回设备");
+      deviceListReady = true;
       return;
     }
     setDeviceOptions(ids);
   }catch(err){
-    deviceSelect.innerHTML = "";
-    const failed = document.createElement("option");
-    failed.value = "";
-    failed.textContent = "设备加载失败";
-    deviceSelect.appendChild(failed);
-    deviceSelect.title = err instanceof Error ? err.message : "设备加载失败";
+    const message = err instanceof Error ? err.message : "设备加载失败";
+    if (!deviceListReady) renderDevicePlaceholder("设备加载失败", message);
+    else deviceSelect.title = message;
+  }finally{
+    devicePollBusy = false;
   }
+}
+
+function initDevices(){
+  renderDevicePlaceholder("加载中…", "正在获取设备");
+  deviceListReady = false;
+  refreshDevices();
+  devicePollTimer = setInterval(refreshDevices, CONFIG.devicePollMs || 1000);
 }
 
 function init(){

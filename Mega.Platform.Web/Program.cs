@@ -22,7 +22,7 @@ public class Program
 
         // NLog: Setup NLog for Dependency injection
         builder.Logging.ClearProviders();
-        //builder.Logging.AddConsole();
+        builder.Logging.AddConsole();
         builder.Services.AddLogging(logging =>
         {
             logging.AddNLogWeb("./NLog.config");

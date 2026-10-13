@@ -110,6 +110,9 @@ public class DefaultDevice : IDevice
     /// </summary>
     protected virtual async Task OnApplicationStopping()
     {
-        await Task.CompletedTask;
+        if (MqttClientWrapper.IsConnected)
+        {
+            await _clientMqttApplicationMessageListener.OnDisconnected(this);
+        }
     }
 }
