@@ -30,8 +30,11 @@ public class Program
 
         app.UseHttpsRedirection();
 
-        app.UseAuthorization();
+        // wwwroot 下的 html/css/js 可直接通过 URL 打开，根路径默认打开 index.html
+        app.UseDefaultFiles();
+        app.UseStaticFiles();
 
+        app.UseAuthorization();
 
         app.MapControllers();
 
