@@ -54,11 +54,6 @@ public class MqttServerConnectionOptions
 
     //
     // 摘要:
-    //     是否启用心跳，默认false
-    public bool EnableHeartbeat { get; set; }
-
-    //
-    // 摘要:
     //     设备端，是否开启mqtt日志订阅，默认不订阅
     public bool EnableLogMqttClient { get; set; }
 }

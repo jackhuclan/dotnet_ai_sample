@@ -3,12 +3,14 @@ using Microsoft.Extensions.AI;
 using Microsoft.Shared.Diagnostics;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
+using System.Text.Json;
 
 namespace Mega.Platform.Core.Host.Agent;
 
 public class AIToolManager : IAIToolManager
 {
     private readonly ConcurrentDictionary<string, AITool> _tools = new();
+    private readonly ConcurrentDictionary<string, JsonElement> _commands = new();
     private readonly IDeviceServiceInvoker _deviceServiceInvoker;
 
     public IList<AITool> Tools => _tools.Values.ToList();
@@ -23,8 +25,8 @@ public class AIToolManager : IAIToolManager
         if (!_tools.TryGetValue(commandRequest.CommandId, out var function))
         {
             var invokerParam = Expression.Parameter(typeof(IDeviceServiceInvoker), "invoker");
-            var reqParam = Expression.Parameter(typeof(object), "req");
-            var invokeMethod = typeof(IDeviceServiceInvoker).GetMethod("InvokeService", [typeof(DeviceServiceInvokeRequest)]);
+            var reqParam = Expression.Parameter(typeof(DeviceServiceInvokeRequest), "req");
+            var invokeMethod = typeof(IDeviceServiceInvoker).GetMethod(nameof(IDeviceServiceInvoker.InvokeService), [typeof(DeviceServiceInvokeRequest)]);
             Throw.IfNull(invokeMethod, nameof(invokeMethod));
 
             var callExpr = Expression.Call(invokerParam, invokeMethod, reqParam);
@@ -32,11 +34,7 @@ public class AIToolManager : IAIToolManager
 
             CommandFunction func = req => template.Compile()(_deviceServiceInvoker, req);
 
-            function = AIFunctionFactory.Create(func, commandRequest.CommandId,
-                commandRequest.Description + Environment.NewLine
-                + "##参数说明" + Environment.NewLine
-                + "- serviceId(工具的唯一标识): " + commandRequest.CommandId + Environment.NewLine
-                + "- servicePath(工具的调用路径): " + commandRequest.CommandPath);
+            function = AIFunctionFactory.Create(func, commandRequest.CommandId, commandRequest.Description);
             _tools[commandRequest.CommandId] = function;
         }
     }

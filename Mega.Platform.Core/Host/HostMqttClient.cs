@@ -26,7 +26,7 @@ internal class HostMqttClient : IHostedService
         _mqttServerOptions = options.Value;
         _logger = loggerFactory.CreateLogger<HostMqttClient>();
         _mqttClient.DisconnectedAsync += MqttClient_DisconnectedAsync;
-        _mqttClient.ApplicationMessageReceivedAsync += _mqttClient_ApplicationMessageReceivedAsync;
+        _mqttClient.ApplicationMessageReceivedAsync += OnApplicationMessageReceivedAsync;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -47,7 +47,7 @@ internal class HostMqttClient : IHostedService
         });
     }
 
-    private async Task _mqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
+    private async Task OnApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
     {
         if (MqttTopicFilterComparer.Compare(arg.ApplicationMessage.Topic, MqttTopics.GetReplySubscribeTopic(MqttTopics.ServiceReplyTopicTemplate)) == MqttTopicFilterCompareResult.IsMatch
             || arg.IsHandled)

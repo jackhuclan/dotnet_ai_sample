@@ -30,7 +30,6 @@ public class DefaultDevice : IDevice
     private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<DefaultDevice> _logger;
-    private readonly IClientMqttApplicationMessageListener _clientMqttApplicationMessageListener;
 
     protected DefaultDevice(IOptions<DeviceDescriptor> deviceDescriptorOptions,
         IServiceProvider serviceProvider)
@@ -49,7 +48,6 @@ public class DefaultDevice : IDevice
         _logger = _loggerFactory.CreateLogger<DefaultDevice>();
         _mqttClient = serviceProvider.GetRequiredService<IMqttClient>();
         CommandManager = serviceProvider.GetRequiredService<ICommandManager>();
-        _clientMqttApplicationMessageListener = serviceProvider.GetRequiredService<IClientMqttApplicationMessageListener>();
         MqttClientWrapper.OnConnected += async () => await OnMqttConnected();
         MqttClientWrapper.OnDisconnected += async () => await OnMqttDisconnected();
         _applicationLifetime.ApplicationStarted.Register(async () => await OnApplicationStarted());
@@ -93,23 +91,12 @@ public class DefaultDevice : IDevice
         var servicePath = MqttTopics.GetSubscribeTopic(MqttTopics.ServiceTopicTemplate, DeviceDescriptor.ProductId, DeviceDescriptor.DeviceId);
         var subscribeResult = await _mqttClient.SubscribeAsync(servicePath, MqttQualityOfServiceLevel.AtLeastOnce);
         _logger.LogInformation($"SubscribeService: {servicePath},ResultCode={subscribeResult.Items.FirstOrDefault()?.ResultCode}");
-
-        await _clientMqttApplicationMessageListener.OnConnected(this);
     }
 
-    protected virtual async Task OnMqttDisconnected()
-    {
-        await _clientMqttApplicationMessageListener.OnDisconnected(this);
-    }
+    protected virtual async Task OnMqttDisconnected() => await Task.CompletedTask;
 
     /// <summary>
     /// do something when application is closing
     /// </summary>
-    protected virtual async Task OnApplicationStopping()
-    {
-        if (MqttClientWrapper.IsConnected)
-        {
-            await _clientMqttApplicationMessageListener.OnDisconnected(this);
-        }
-    }
+    protected virtual async Task OnApplicationStopping() => await Task.CompletedTask;
 }

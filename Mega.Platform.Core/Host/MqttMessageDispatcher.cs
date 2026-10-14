@@ -40,7 +40,8 @@ internal class MqttMessageDispatcher : IMqttMessageDispatcher
             MqttTopics.GetSubscribeTopic(MqttTopics.EventTopicTemplate),
             MqttTopics.GetSubscribeTopic(MqttTopics.StatusTopicTemplate),
             MqttTopics.GetSubscribeTopic(MqttTopics.AlarmTopicTemplate),
-            MqttTopics.GetSubscribeTopic(MqttTopics.PropertyTopicTemplate)
+            MqttTopics.GetSubscribeTopic(MqttTopics.PropertyTopicTemplate),
+            MqttTopics.GetSubscribeTopic(MqttTopics.CommandTopicTemplate)
         };
 
         foreach (var subscribeTopic in subscribeTopics)

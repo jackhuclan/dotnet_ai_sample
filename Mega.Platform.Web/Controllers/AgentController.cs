@@ -59,6 +59,9 @@ public class AgentController : ControllerBase
         var servicepath = MqttTopics.GetSubscribeTopic(MqttTopics.ServiceTopicTemplate, deviceDescriptor.ProductId, chatRequest.DeviceId);
         var json = JsonSerializer.Serialize(new DeviceServiceInvokeRequest
         {
+            ServiceId = "button1_Click",
+            ServicePath = "aoi/form1/button1_Click",
+            ClientId = "M001",
             ProductId = deviceDescriptor.ProductId,
             DeviceId = chatRequest.DeviceId,
             RequestTopic = servicepath,
@@ -85,13 +88,10 @@ public class AgentController : ControllerBase
              .AsAIAgent(
                 name: mainAgentName,
                 model: chatRequest.Model,
-                instructions: "You are a helpful assistant that can control devices and provide information about them." + Environment.NewLine
-                              + "##注意事项：" + Environment.NewLine
-                              + "1. 调用工具时，从对应工具的描述中提取其servicePath" + Environment.NewLine
-                              + "2. deviceServiceInvokeRequest参数中的serviceId值就是工具的name，servicePath就是工具的servicePath" + Environment.NewLine
-                              + "3. 传入deviceServiceInvokeRequest参数时，需要确保参数的完整性和正确性" + Environment.NewLine
-                              + "##约束" + Environment.NewLine
-                              + "- deviceServiceInvokeRequest参数不完整的时候，不允许调用工具，并给出相应的提示，告知缺少的参数",
+                instructions: "You are a helpful assistant that can control devices and provide information about them.",
+                //+ Environment.NewLine
+                //              + "##约束" + Environment.NewLine
+                //              + "- deviceServiceInvokeRequest参数不完整的时候，不允许调用工具，并给出相应的提示，告知缺少的参数",
                 tools: _aIToolManager.Tools
              );
 

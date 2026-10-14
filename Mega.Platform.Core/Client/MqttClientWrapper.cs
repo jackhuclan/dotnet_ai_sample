@@ -1,7 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Mega.Platform.Core.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MQTTnet;
+using MQTTnet.Protocol;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Text.Json;
 
 namespace Mega.Platform.Core.Client;
 
@@ -9,7 +13,6 @@ public class MqttClientWrapper : IMqttClientWrapper
 {
     private volatile bool _isConnected = false;
     private readonly IMqttClient _mqttClient;
-    private readonly IClientMqttApplicationMessageListener _clientMqttApplicationMessageListener;
     private readonly IMqttClientLogger _mqttClientLogger;
     private readonly ILogger<MqttClientWrapper> _logger;
     private readonly MqttServerConnectionOptions _mqttServerOptions;
@@ -41,15 +44,12 @@ public class MqttClientWrapper : IMqttClientWrapper
     public MqttClientWrapper(IMqttClient mqttClient,
         IOptions<MqttServerConnectionOptions> options,
         ILoggerFactory loggerFactory,
-        IClientMqttApplicationMessageListener clientMqttApplicationMessageListner,
         IMqttClientLogger mqttClientLogger)
     {
         _mqttClient = mqttClient;
-        _clientMqttApplicationMessageListener = clientMqttApplicationMessageListner;
         _mqttClientLogger = mqttClientLogger;
         _mqttServerOptions = options.Value;
-        mqttClient.ApplicationMessageReceivedAsync += arg => _clientMqttApplicationMessageListener.OnApplicationMessageReceivedAsync(arg);
-        mqttClient.DisconnectedAsync += MqttClient_DisconnectedAsync;
+        _mqttClient.DisconnectedAsync += OnMqttClientDisconnectedAsync;
         _periodicTimer = new PeriodicTimer(_mqttServerOptions.HeartbeatPeriod);
         _logger = loggerFactory.CreateLogger<MqttClientWrapper>();
 
@@ -68,9 +68,9 @@ public class MqttClientWrapper : IMqttClientWrapper
                 _logger.LogInformation($"mqtt is broken, MqttClientWrapper ConnectMqtt again...");
                 await DoConnectMqttInternal();
             }
-            else if (_mqttServerOptions.EnableHeartbeat && IsConnected)
+            else
             {
-                var publishSuccess = await _clientMqttApplicationMessageListener.OnHeartbeat(device);
+                var publishSuccess = await Report(device, true);
                 if (!publishSuccess)
                 {
                     await _mqttClient.DisconnectAsync(MqttClientDisconnectOptionsReason.UnspecifiedError, "heartbeat packet send failed");
@@ -80,7 +80,35 @@ public class MqttClientWrapper : IMqttClientWrapper
         }
     }
 
-    private Task MqttClient_DisconnectedAsync(MqttClientDisconnectedEventArgs arg)
+    public async Task<bool> Report(IDevice device, bool reported)
+    {
+        try
+        {
+            var request = new OnlineRequest
+            {
+                ProductId = device.ProductId,
+                DeviceId = device.DeviceId,
+                DeviceName = device.DeviceName,
+                Connected = reported,
+            };
+
+            byte[] payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request));
+            var publishResult = await _mqttClient.PublishBinaryAsync(MqttTopics.GetSubscribeTopic(MqttTopics.OnlineTopicTemplate,
+                device.ProductId,
+                device.DeviceId), payload, MqttQualityOfServiceLevel.AtLeastOnce);
+            var msg = reported ? "login" : "logout";
+            _logger.LogInformation($"{device.DeviceId} report {msg}, publishResult={publishResult.ReasonCode}");
+
+            return publishResult != null && publishResult.IsSuccess;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return false;
+        }
+    }
+
+    private Task OnMqttClientDisconnectedAsync(MqttClientDisconnectedEventArgs arg)
     {
         _logger.LogInformation($"MqttClient disconnected with error={arg.ReasonString}!");
         IsConnected = false;
@@ -170,7 +198,7 @@ public class MqttClientWrapper : IMqttClientWrapper
 
         _disposing = true;
         _logger.LogInformation($"MqttClientWrapper Disposed!");
-        _mqttClient.DisconnectedAsync -= MqttClient_DisconnectedAsync;
+        _mqttClient.DisconnectedAsync -= OnMqttClientDisconnectedAsync;
         _periodicTimer.Dispose();
         _mqttClient.Dispose();
     }

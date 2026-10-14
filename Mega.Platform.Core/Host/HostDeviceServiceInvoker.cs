@@ -16,7 +16,7 @@ internal class HostDeviceServiceInvoker : IDeviceServiceInvoker
         _logger = loggerFactory.CreateLogger<HostDeviceServiceInvoker>();
     }
 
-    public async Task<DeviceServiceInvokeResponse> InvokeService(DeviceServiceInvokeRequest request, int retryCount = 10)
+    public async Task<DeviceServiceInvokeResponse> InvokeService(DeviceServiceInvokeRequest request)
     {
         Throw.IfNull(request);
         Throw.IfNullOrEmpty(request.ServiceId);
@@ -34,7 +34,7 @@ internal class HostDeviceServiceInvoker : IDeviceServiceInvoker
         try
         {
             CancellationTokenSource tokenSource = new CancellationTokenSource();
-            //tokenSource.CancelAfter(TimeSpan.FromSeconds(600));
+            tokenSource.CancelAfter(TimeSpan.FromSeconds(600));
             CancellationToken cancellationToken = tokenSource.Token;
             var requestTopic = request.RequestTopic;
             var replyTopic = request.ReplyTopic;
