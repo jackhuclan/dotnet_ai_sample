@@ -50,35 +50,35 @@ public class DefaultClientMqttApplicationMessageListener : IClientMqttApplicatio
 
     public virtual async Task<bool> OnHeartbeat(IDevice device)
     {
+        return await Report(device, true);
+    }
+
+    private async Task<bool> Report(IDevice device, bool reported)
+    {
         try
         {
-            return await Report(device, true);
+            var request = new OnlineRequest
+            {
+                ProductId = device.ProductId,
+                DeviceId = device.DeviceId,
+                DeviceName = device.DeviceName,
+                Connected = reported,
+            };
+
+            byte[] payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request));
+            var publishResult = await _mqttClient.PublishBinaryAsync(MqttTopics.GetSubscribeTopic(MqttTopics.OnlineTopicTemplate,
+                device.ProductId,
+                device.DeviceId), payload, MqttQualityOfServiceLevel.AtLeastOnce);
+            var msg = reported ? "login" : "logout";
+            _logger.LogInformation($"{device.DeviceId} report {msg}, publishResult={publishResult.ReasonCode}");
+
+            return publishResult != null && publishResult.IsSuccess;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, ex.Message);
             return false;
         }
-    }
-
-    private async Task<bool> Report(IDevice device, bool reported)
-    {
-        var request = new OnlineRequest
-        {
-            ProductId = device.ProductId,
-            DeviceId = device.DeviceId,
-            DeviceName = device.DeviceName,
-            Connected = reported,
-        };
-
-        byte[] payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request));
-        var publishResult = await _mqttClient.PublishBinaryAsync(MqttTopics.GetSubscribeTopic(MqttTopics.OnlineTopicTemplate,
-            device.ProductId,
-            device.DeviceId), payload, MqttQualityOfServiceLevel.ExactlyOnce);
-        var msg = reported ? "login" : "logout";
-        _logger.LogInformation($"{device.DeviceId} report {msg}, publishResult={publishResult.ReasonCode}");
-
-        return publishResult != null && publishResult.IsSuccess;
     }
 
     public async Task SubscribeService(IDevice device,
