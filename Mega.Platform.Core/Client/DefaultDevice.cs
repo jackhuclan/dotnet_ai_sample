@@ -62,7 +62,7 @@ public class DefaultDevice : IDevice
     /// <param name="remoteCommand">指令</param>
     public void AddCommand(IRemoteCommand remoteCommand)
     {
-        CommandManager.AddCommand(this.DeviceDescriptor, remoteCommand);
+        CommandManager.AddCommand(remoteCommand);
     }
 
     /// <summary>
@@ -77,7 +77,7 @@ public class DefaultDevice : IDevice
         Throw.IfNullOrEmpty(commandDescriptor.CommandPath);
         Throw.IfNull(command);
 
-        CommandManager.AddCommand(this.DeviceDescriptor, ObjectFactory.CreateObject<DelegateCommand<DefaultDevice>>(ApplicationServices, this, commandDescriptor, command));
+        CommandManager.AddCommand(ObjectFactory.CreateObject<DelegateCommand<DefaultDevice>>(ApplicationServices, this, commandDescriptor, command));
     }
 
     /// <summary>

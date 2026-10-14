@@ -1,6 +1,6 @@
 ﻿namespace Mega.Platform.Core.Client;
 
-public class DeviceDescriptor
+public record DeviceDescriptor
 {
     public string ProductId { get; set; } = string.Empty;
     public string DeviceId { get; set; } = string.Empty;

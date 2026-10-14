@@ -17,6 +17,7 @@
   <Project Path="Harness_Step01_Research/Harness_Step01_Research.csproj" Id="1c6a23c8-4ab5-4ecf-b94e-f1fdbb860cc4" />
   <Project Path="Harness_Step04_CodeExecution/Harness_Step04_CodeExecution.csproj" />
   <Project Path="Mega.Blade/Mega.Blade.csproj" Id="c6ca8380-ec45-4f38-b928-c46b516f192d" />
+  <Project Path="Mega.Platform.Core.UnitTests/Mega.Platform.Core.UnitTests.csproj" Id="5d879f7d-9f99-4f17-8e8b-8df2bd965c1b" />
   <Project Path="Mega.Platform.Core/Mega.Platform.Core.csproj" Id="e50a5ee8-c408-457c-90a2-c9738b9c30d4" />
   <Project Path="Mega.Platform.Web/Mega.Platform.Web.csproj" Id="41ba61f5-a2c8-494e-bc29-6511ff242e0e" />
   <Project Path="TestProject1/dotnet_ai_sample.csproj" Id="7a61f630-5b02-4948-b11c-904505f12868" />

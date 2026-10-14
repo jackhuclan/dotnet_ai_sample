@@ -11,4 +11,7 @@
 		<PackageReference Include="MQTTnet.AspNetCore" Version="5.2.0.1603" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="Mega.Platform.Core.UnitTests" />
+	</ItemGroup>
 </Project>

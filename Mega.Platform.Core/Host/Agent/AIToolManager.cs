@@ -4,7 +4,7 @@ using Microsoft.Shared.Diagnostics;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 
-namespace Mega.Platform.Core.Host;
+namespace Mega.Platform.Core.Host.Agent;
 
 public class AIToolManager : IAIToolManager
 {
@@ -32,7 +32,11 @@ public class AIToolManager : IAIToolManager
 
             CommandFunction func = req => template.Compile()(_deviceServiceInvoker, req);
 
-            function = AIFunctionFactory.Create(func, commandRequest.CommandId, commandRequest.Description);
+            function = AIFunctionFactory.Create(func, commandRequest.CommandId,
+                commandRequest.Description + Environment.NewLine
+                + "##参数说明" + Environment.NewLine
+                + "- serviceId(工具的唯一标识): " + commandRequest.CommandId + Environment.NewLine
+                + "- servicePath(工具的调用路径): " + commandRequest.CommandPath);
             _tools[commandRequest.CommandId] = function;
         }
     }

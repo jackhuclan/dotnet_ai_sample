@@ -1,5 +1,6 @@
 ﻿using Mega.Platform.Core.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Protocol;
 using System.Text;
@@ -14,23 +15,28 @@ public class CommandManager : ICommandManager
 {
     private readonly Dictionary<string, IRemoteCommand> _commands = new();
     private readonly IMqttClient _mqttClient;
+    private readonly IMqttClientWrapper _mqttClientWrapper;
     private readonly ILogger<CommandManager> _logger;
-    public CommandManager(IMqttClient mqttClient,
+    private readonly DeviceDescriptor _deviceDescriptor;
+    public CommandManager(IOptions<DeviceDescriptor> deviceDescriptorOptions,
+        IMqttClient mqttClient,
+        IMqttClientWrapper mqttClientWrapper,
         ILoggerFactory loggerFactory)
     {
+        _deviceDescriptor = deviceDescriptorOptions.Value;
         _mqttClient = mqttClient;
+        _mqttClientWrapper = mqttClientWrapper;
+        _mqttClientWrapper.OnConnected += OnMqttClientConnected;
         _logger = loggerFactory.CreateLogger<CommandManager>();
     }
-
     /// <summary>
     /// bind a remote command to a device. if CommandPath exists, the old command with same path will be replaced!
     /// </summary>
     /// <param name="deviceDescriptor"></param>
     /// <param name="remoteCommand"></param>
-    public async Task AddCommand(DeviceDescriptor deviceDescriptor, IRemoteCommand remoteCommand)
+    public async Task AddCommand(IRemoteCommand remoteCommand)
     {
         _commands[remoteCommand.Descriptor.CommandPath] = remoteCommand;
-        await PublishCommand(deviceDescriptor, remoteCommand);
     }
 
     public bool TryGetCommand(string commandPath, out IRemoteCommand? command)
@@ -46,15 +52,23 @@ public class CommandManager : ICommandManager
         return false;
     }
 
-    private async Task PublishCommand(DeviceDescriptor deviceDescriptor, IRemoteCommand command)
+    private async Task OnMqttClientConnected()
+    {
+        foreach (var item in _commands)
+        {
+            await PublishCommand(item.Value);
+        }
+    }
+
+    private async Task PublishCommand(IRemoteCommand command)
     {
         try
         {
             var request = new DeviceCommandReportRequest
             {
-                ProductId = deviceDescriptor.ProductId,
-                DeviceId = deviceDescriptor.DeviceId,
-                ClientId = deviceDescriptor.DeviceId,
+                ProductId = _deviceDescriptor.ProductId,
+                DeviceId = _deviceDescriptor.DeviceId,
+                ClientId = _deviceDescriptor.DeviceId,
                 CommandId = command.Descriptor.CommandId,
                 CommandPath = command.Descriptor.CommandPath,
                 Description = command.Descriptor.Description
@@ -62,9 +76,9 @@ public class CommandManager : ICommandManager
 
             byte[] payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request));
             var publishResult = await _mqttClient.PublishBinaryAsync(MqttTopics.GetSubscribeTopic(MqttTopics.CommandTopicTemplate,
-                deviceDescriptor.ProductId,
-                deviceDescriptor.DeviceId), payload, MqttQualityOfServiceLevel.AtLeastOnce);
-            _logger.LogInformation($"{deviceDescriptor.DeviceId} reported, publishResult={publishResult.ReasonCode}");
+                _deviceDescriptor.ProductId,
+                _deviceDescriptor.DeviceId), payload, MqttQualityOfServiceLevel.AtLeastOnce);
+            _logger.LogInformation($"{_deviceDescriptor.DeviceId}'s command {command.Descriptor.CommandId} reported, publishResult={publishResult.ReasonCode}");
 
         }
         catch (Exception ex)

@@ -1,4 +1,5 @@
-﻿using Mega.Platform.Core.Models;
+﻿using Mega.Platform.Core.Host.Agent;
+using Mega.Platform.Core.Models;
 using Mega.Platform.Core.Utils;
 using Microsoft.Extensions.Logging;
 using MQTTnet;

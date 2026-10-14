@@ -1,7 +1,7 @@
 ﻿using Mega.Platform.Core.Models;
 using Microsoft.Extensions.AI;
 
-namespace Mega.Platform.Core.Host;
+namespace Mega.Platform.Core.Host.Agent;
 
 public interface IAIToolManager
 {
