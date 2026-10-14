@@ -10,6 +10,7 @@ public interface IDevice
     string ClientId { get; }
     IObjectFactory ObjectFactory { get; }
     IMqttClientWrapper MqttClientWrapper { get; }
+    public ICommandManager CommandManager { get; }
     /// <summary>
     /// 全局服务
     /// </summary>
@@ -18,10 +19,6 @@ public interface IDevice
     /// 设备描述符
     /// </summary>
     DeviceDescriptor DeviceDescriptor { get; }
-    /// <summary>
-    /// 远程控制指令集合
-    /// </summary>
-    CommandSet Commands { get; }
     void AddCommand(IRemoteCommand remoteCommand);
     void AddCommand(CommandDescriptor commandDescriptor, CommandFunction command, CommandUsageScope commandUsage = CommandUsageScope.Both);
 }

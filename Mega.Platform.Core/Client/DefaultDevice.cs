@@ -17,6 +17,7 @@ public class DefaultDevice : IDevice
     public string ClientId { get; }
     public IObjectFactory ObjectFactory { get; private set; }
     public IMqttClientWrapper MqttClientWrapper { get; }
+    public ICommandManager CommandManager { get; }
     /// <summary>
     /// 全局服务
     /// </summary>
@@ -30,10 +31,6 @@ public class DefaultDevice : IDevice
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<DefaultDevice> _logger;
     private readonly IClientMqttApplicationMessageListener _clientMqttApplicationMessageListener;
-    /// <summary>
-    /// 远程服务控制指令集合
-    /// </summary>
-    public CommandSet Commands { get; } = new();
 
     protected DefaultDevice(IOptions<DeviceDescriptor> deviceDescriptorOptions,
         IServiceProvider serviceProvider)
@@ -51,6 +48,7 @@ public class DefaultDevice : IDevice
         _loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
         _logger = _loggerFactory.CreateLogger<DefaultDevice>();
         _mqttClient = serviceProvider.GetRequiredService<IMqttClient>();
+        CommandManager = serviceProvider.GetRequiredService<ICommandManager>();
         _clientMqttApplicationMessageListener = serviceProvider.GetRequiredService<IClientMqttApplicationMessageListener>();
         MqttClientWrapper.OnConnected += async () => await OnMqttConnected();
         MqttClientWrapper.OnDisconnected += async () => await OnMqttDisconnected();
@@ -64,7 +62,7 @@ public class DefaultDevice : IDevice
     /// <param name="remoteCommand">指令</param>
     public void AddCommand(IRemoteCommand remoteCommand)
     {
-        Commands.AddCommand(remoteCommand);
+        CommandManager.AddCommand(this.DeviceDescriptor, remoteCommand);
     }
 
     /// <summary>
@@ -79,7 +77,7 @@ public class DefaultDevice : IDevice
         Throw.IfNullOrEmpty(commandDescriptor.CommandPath);
         Throw.IfNull(command);
 
-        Commands.AddCommand(ObjectFactory.CreateObject<DelegateCommand<DefaultDevice>>(ApplicationServices, this, commandDescriptor, command));
+        CommandManager.AddCommand(this.DeviceDescriptor, ObjectFactory.CreateObject<DelegateCommand<DefaultDevice>>(ApplicationServices, this, commandDescriptor, command));
     }
 
     /// <summary>

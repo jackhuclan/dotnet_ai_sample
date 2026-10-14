@@ -8,6 +8,7 @@ public class MqttTopics
     public const string StatusTopicTemplate = "mega/status/p/{0}/d/{1}";
     public const string AlarmTopicTemplate = "mega/alarm/p/{0}/d/{1}";
     public const string PropertyTopicTemplate = "mega/property/p/{0}/d/{1}";
+    public const string CommandTopicTemplate = "mega/command/p/{0}/d/{1}";
     public const string ServiceTopicTemplate = "mega/service/p/{0}/d/{1}";
     public const string ServiceReplyTopicTemplate = "mega/service/p/{0}/d/{1}/reply";
 

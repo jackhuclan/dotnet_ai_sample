@@ -19,16 +19,19 @@ public class AgentController : ControllerBase
     private readonly IAgentManager _agentManager;
     private readonly ISessionManager _sessionManager;
     private readonly IDeviceManager _deviceManager;
+    private readonly IAIToolManager _aIToolManager;
     private readonly CameraCommandSet _cameraCommandSet;
 
     public AgentController(IAgentManager agentManager,
         ISessionManager sessionManager,
         IDeviceManager deviceManager,
+        IAIToolManager aIToolManager,
         CameraCommandSet cameraCommandSet)
     {
         _agentManager = agentManager;
         _sessionManager = sessionManager;
         _deviceManager = deviceManager;
+        _aIToolManager = aIToolManager;
         _cameraCommandSet = cameraCommandSet;
     }
 
@@ -85,7 +88,7 @@ public class AgentController : ControllerBase
                 name: mainAgentName,
                 model: chatRequest.Model,
                 instructions: "You are a helpful assistant that can control devices and provide information about them.",
-                tools: _cameraCommandSet.AsTools()
+                tools: _aIToolManager.Tools
              );
 
             //var agent = new DeviceChatAgent(chatClientAgent, new DeviceDescriptor

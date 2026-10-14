@@ -32,21 +32,21 @@ public partial class Form1 : Form
 
     private void Form1_Load(object sender, EventArgs e)
     {
-        _device.AddCommand(new CommandDescriptor("button1_Click", "aoi/form1/button1_Click", CommandUsageScope.Both),
+        _device.AddCommand(new CommandDescriptor("button1_Click", "aoi/form1/button1_Click", "当需要打开设备时执行"),
             async (deviceServiceInvokeRequest) =>
         {
             button1_Click(this, new EventArgs());
             return DeviceServiceInvokeResponse.SUCCESS;
         });
 
-        _device.AddCommand(new CommandDescriptor("button2_Click", "aoi/form1/button2_Click", CommandUsageScope.Both),
+        _device.AddCommand(new CommandDescriptor("button2_Click", "aoi/form1/button2_Click", "当需要关闭设备时执行"),
            async (deviceServiceInvokeRequest) =>
            {
                button2_Click(this, new EventArgs());
                return DeviceServiceInvokeResponse.SUCCESS;
            });
 
-        _device.AddCommand(new CommandDescriptor("custom_event", "aoi/form1/custom_event", CommandUsageScope.Both),
+        _device.AddCommand(new CommandDescriptor("custom_event", "aoi/form1/custom_event", "自定义事件"),
            async (deviceServiceInvokeRequest) =>
            {
                button1_Click(this, new EventArgs());

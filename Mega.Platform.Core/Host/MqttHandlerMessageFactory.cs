@@ -26,6 +26,8 @@ internal class MqttMessageHandlerFactory : IMqttMessageHandlerFactory
                 return (IMqttMessageHandler)ActivatorUtilities.CreateInstance(_provider, typeof(AlarmMqttMessageHandler));
             case MqttTopics.PropertyTopicTemplate:
                 return (IMqttMessageHandler)ActivatorUtilities.CreateInstance(_provider, typeof(PropertyMqttMessageHandler));
+            case MqttTopics.CommandTopicTemplate:
+                return (IMqttMessageHandler)ActivatorUtilities.CreateInstance(_provider, typeof(CommandMqttMessageHandler));
             default:
                 return (IMqttMessageHandler)ActivatorUtilities.CreateInstance(_provider, typeof(GenericMqttMessageHandler));
         }

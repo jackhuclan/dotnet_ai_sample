@@ -5,17 +5,17 @@ namespace Mega.Platform.Core.Client.Command;
 public class DelegateCommand<TDevice> : AbstractCommand<TDevice>, IRemoteCommand
     where TDevice : IDevice
 {
-    private readonly CommandFunction _commandFunction;
+    private readonly CommandFunction _innerFunction;
 
     public DelegateCommand(IServiceProvider serviceProvider,
         TDevice device,
         CommandDescriptor commandDescriptor,
-        CommandFunction commandFunction)
+        CommandFunction innerFunction)
         : base(serviceProvider, device, commandDescriptor)
     {
-        _commandFunction = commandFunction;
+        _innerFunction = innerFunction;
     }
 
     public override Task<DeviceServiceInvokeResponse> Invoke(DeviceServiceInvokeRequest deviceServiceInvokeRequest)
-        => _commandFunction.Invoke(deviceServiceInvokeRequest);
+        => _innerFunction.Invoke(deviceServiceInvokeRequest);
 }

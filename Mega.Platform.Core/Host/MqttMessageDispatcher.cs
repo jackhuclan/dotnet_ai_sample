@@ -29,6 +29,7 @@ internal class MqttMessageDispatcher : IMqttMessageDispatcher
         await SubscribeService(MqttTopics.GetSubscribeTopic(MqttTopics.StatusTopicTemplate), _agentHandlerFactory.CreateHandler(MqttTopics.StatusTopicTemplate));
         await SubscribeService(MqttTopics.GetSubscribeTopic(MqttTopics.AlarmTopicTemplate), _agentHandlerFactory.CreateHandler(MqttTopics.AlarmTopicTemplate));
         await SubscribeService(MqttTopics.GetSubscribeTopic(MqttTopics.PropertyTopicTemplate), _agentHandlerFactory.CreateHandler(MqttTopics.PropertyTopicTemplate));
+        await SubscribeService(MqttTopics.GetSubscribeTopic(MqttTopics.CommandTopicTemplate), _agentHandlerFactory.CreateHandler(MqttTopics.CommandTopicTemplate));
     }
 
     public IMqttMessageHandler SelectHandler(string topic)

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Mega.Platform.Core.Client.Command;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Shared.Diagnostics;
 
@@ -23,6 +24,7 @@ public static class ClientMqttSetup
         services.AddSingleton<IMqttClientWrapper, MqttClientWrapper>();
         services.AddSingleton<IObjectFactory, ObjectFactory>();
         services.AddSingleton<IMqttMessagePublisher, MqttMessagePublisher>();
+        services.AddSingleton<ICommandManager, CommandManager>();
         services.AddSingleton<IClientMqttApplicationMessageListener, DefaultClientMqttApplicationMessageListener>();
         services.AddSingleton<IAsyncTaskWaiter, AsyncTaskWaiter>();
     }

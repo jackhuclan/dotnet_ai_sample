@@ -5,9 +5,10 @@ public class CommandDescriptorAttribute : Attribute
 {
     public CommandDescriptorAttribute(string commandId,
         string commandPath,
-        CommandUsageScope executionScope)
+        string description,
+        CommandUsageScope executionScope = CommandUsageScope.Both)
     {
-        Descriptor = new CommandDescriptor(commandId, commandPath, executionScope);
+        Descriptor = new CommandDescriptor(commandId, commandPath, description, executionScope);
     }
 
     public CommandDescriptor Descriptor { get; }

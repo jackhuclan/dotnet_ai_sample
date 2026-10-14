@@ -31,14 +31,7 @@ public class DefaultClientMqttApplicationMessageListener : IClientMqttApplicatio
         _device = device;
         _logger.LogInformation($"OnMqttConnected {device.DeviceId} MqttConnected=true");
 
-        var reported = await OnHeartbeat(device);
-
-        if (!reported) return;
-
-        foreach (var command in device.Commands.Where(x => (x.Value.Descriptor.UsageScope & CommandUsageScope.Mqtt) == CommandUsageScope.Mqtt))
-        {
-            await SubscribeService(device, command.Value);
-        }
+        await Report(device, true);
     }
 
     public virtual async Task OnDisconnected(IDevice device)

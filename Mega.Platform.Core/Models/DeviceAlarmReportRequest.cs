@@ -14,15 +14,15 @@ public class DeviceAlarmReportRequest
     /// </summary>
     public long Id { get; set; } = 0;
     /// <summary>
-    /// 设备产品
+    /// 产品ID
     /// </summary>
     public string ProductId { get; set; } = string.Empty;
     /// <summary>
-    /// 设备产品
+    /// 设备ID
     /// </summary>
     public string DeviceId { get; set; } = string.Empty;
     /// <summary>
-    /// 设备产品
+    /// 客户端ID
     /// </summary>
     public string ClientId { get; set; } = string.Empty;
     /// <summary>

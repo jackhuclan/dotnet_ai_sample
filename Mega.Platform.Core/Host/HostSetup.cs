@@ -30,6 +30,7 @@ public static class HostSetup
         services.AddSingleton<IAsyncTaskWaiter, AsyncTaskWaiter>();
         services.AddSingleton<IAgentManager, AgentManager>();
         services.AddSingleton<ISessionManager, SessionManager>();
+        services.AddSingleton<IAIToolManager, AIToolManager>();
         services.AddSingleton<CameraCommandSet>();
     }
 
