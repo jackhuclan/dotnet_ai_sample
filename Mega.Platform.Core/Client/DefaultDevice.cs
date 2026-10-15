@@ -28,7 +28,7 @@ public class DefaultDevice : IDevice
     private readonly ICommandManager _commandManager;
     private readonly IMqttClient _mqttClient;
     private readonly IHostApplicationLifetime _applicationLifetime;
-    private readonly IClientMqttApplicationMessageListener _clientMqttApplicationMessageListener;
+    private readonly IMqttApplicationMessageListener _clientMqttApplicationMessageListener;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<DefaultDevice> _logger;
 
@@ -49,7 +49,7 @@ public class DefaultDevice : IDevice
         _logger = _loggerFactory.CreateLogger<DefaultDevice>();
         _mqttClient = serviceProvider.GetRequiredService<IMqttClient>();
         _commandManager = serviceProvider.GetRequiredService<ICommandManager>();
-        _clientMqttApplicationMessageListener = serviceProvider.GetRequiredService<IClientMqttApplicationMessageListener>();
+        _clientMqttApplicationMessageListener = serviceProvider.GetRequiredService<IMqttApplicationMessageListener>();
         _mqttClientWrapper.OnConnected += async () => await OnMqttConnected();
         _mqttClientWrapper.OnDisconnected += async () => await OnMqttDisconnected();
         _applicationLifetime.ApplicationStarted.Register(async () => await OnApplicationStarted());

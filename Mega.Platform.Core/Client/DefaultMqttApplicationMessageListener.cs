@@ -9,17 +9,17 @@ using System.Text.Json;
 
 namespace Mega.Platform.Core.Client;
 
-public class DefaultClientMqttApplicationMessageListener : IClientMqttApplicationMessageListener
+public class DefaultMqttApplicationMessageListener : IMqttApplicationMessageListener
 {
-    private readonly ILogger<DefaultClientMqttApplicationMessageListener> _logger;
+    private readonly ILogger<DefaultMqttApplicationMessageListener> _logger;
     private readonly IMqttClient _mqttClient;
     private readonly ICommandManager _commandManager;
 
-    public DefaultClientMqttApplicationMessageListener(IMqttClient mqttClient,
+    public DefaultMqttApplicationMessageListener(IMqttClient mqttClient,
         ICommandManager commandManager,
         ILoggerFactory loggerFactory)
     {
-        _logger = loggerFactory.CreateLogger<DefaultClientMqttApplicationMessageListener>();
+        _logger = loggerFactory.CreateLogger<DefaultMqttApplicationMessageListener>();
         _mqttClient = mqttClient;
         _mqttClient.ApplicationMessageReceivedAsync += OnApplicationMessageReceivedAsync;
         _commandManager = commandManager;

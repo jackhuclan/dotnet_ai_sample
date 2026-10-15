@@ -25,7 +25,7 @@ public static class ClientMqttSetup
         services.AddSingleton<IObjectFactory, ObjectFactory>();
         services.AddSingleton<IMqttMessagePublisher, MqttMessagePublisher>();
         services.AddSingleton<ICommandManager, CommandManager>();
-        services.AddSingleton<IClientMqttApplicationMessageListener, DefaultClientMqttApplicationMessageListener>();
+        services.AddSingleton<IMqttApplicationMessageListener, DefaultMqttApplicationMessageListener>();
         services.AddSingleton<IAsyncTaskWaiter, AsyncTaskWaiter>();
     }
 }
