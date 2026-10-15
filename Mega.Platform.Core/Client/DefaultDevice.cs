@@ -15,9 +15,7 @@ public class DefaultDevice : IDevice
     public string DeviceId { get; }
     public string DeviceName { get; }
     public string ClientId { get; }
-    public IObjectFactory ObjectFactory { get; private set; }
-    public IMqttClientWrapper MqttClientWrapper { get; }
-    public ICommandManager CommandManager { get; }
+    public IObjectFactory ObjectFactory { get; }
     /// <summary>
     /// 全局服务
     /// </summary>
@@ -25,9 +23,12 @@ public class DefaultDevice : IDevice
     /// <summary>
     /// 设备描述符
     /// </summary>
-    public DeviceDescriptor DeviceDescriptor { get; private set; }
+    public DeviceDescriptor DeviceDescriptor { get; }
+    private readonly IMqttClientWrapper _mqttClientWrapper;
+    private readonly ICommandManager _commandManager;
     private readonly IMqttClient _mqttClient;
     private readonly IHostApplicationLifetime _applicationLifetime;
+    private readonly IClientMqttApplicationMessageListener _clientMqttApplicationMessageListener;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<DefaultDevice> _logger;
 
@@ -42,14 +43,15 @@ public class DefaultDevice : IDevice
         ClientId = DeviceDescriptor.DeviceId;
 
         _applicationLifetime = serviceProvider.GetRequiredService<IHostApplicationLifetime>();
-        MqttClientWrapper = serviceProvider.GetRequiredService<IMqttClientWrapper>();
+        _mqttClientWrapper = serviceProvider.GetRequiredService<IMqttClientWrapper>();
         ObjectFactory = serviceProvider.GetRequiredService<IObjectFactory>();
         _loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
         _logger = _loggerFactory.CreateLogger<DefaultDevice>();
         _mqttClient = serviceProvider.GetRequiredService<IMqttClient>();
-        CommandManager = serviceProvider.GetRequiredService<ICommandManager>();
-        MqttClientWrapper.OnConnected += async () => await OnMqttConnected();
-        MqttClientWrapper.OnDisconnected += async () => await OnMqttDisconnected();
+        _commandManager = serviceProvider.GetRequiredService<ICommandManager>();
+        _clientMqttApplicationMessageListener = serviceProvider.GetRequiredService<IClientMqttApplicationMessageListener>();
+        _mqttClientWrapper.OnConnected += async () => await OnMqttConnected();
+        _mqttClientWrapper.OnDisconnected += async () => await OnMqttDisconnected();
         _applicationLifetime.ApplicationStarted.Register(async () => await OnApplicationStarted());
         _applicationLifetime.ApplicationStopping.Register(async () => await OnApplicationStopping());
     }
@@ -60,7 +62,7 @@ public class DefaultDevice : IDevice
     /// <param name="remoteCommand">指令</param>
     public void AddCommand(IRemoteCommand remoteCommand)
     {
-        CommandManager.AddCommand(remoteCommand);
+        _commandManager.AddCommand(remoteCommand);
     }
 
     /// <summary>
@@ -75,7 +77,7 @@ public class DefaultDevice : IDevice
         Throw.IfNullOrEmpty(commandDescriptor.CommandPath);
         Throw.IfNull(command);
 
-        CommandManager.AddCommand(ObjectFactory.CreateObject<DelegateCommand<DefaultDevice>>(ApplicationServices, this, commandDescriptor, command));
+        _commandManager.AddCommand(ObjectFactory.CreateObject<DelegateCommand<DefaultDevice>>(ApplicationServices, this, commandDescriptor, command));
     }
 
     /// <summary>
@@ -83,7 +85,7 @@ public class DefaultDevice : IDevice
     /// </summary>
     protected virtual async Task OnApplicationStarted()
     {
-        _ = MqttClientWrapper.ConnectMqtt(this, _applicationLifetime.ApplicationStarted);
+        _ = _mqttClientWrapper.ConnectMqtt(this, _applicationLifetime.ApplicationStarted);
     }
 
     protected virtual async Task OnMqttConnected()

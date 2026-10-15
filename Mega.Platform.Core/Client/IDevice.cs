@@ -9,8 +9,6 @@ public interface IDevice
     string DeviceName { get; }
     string ClientId { get; }
     IObjectFactory ObjectFactory { get; }
-    IMqttClientWrapper MqttClientWrapper { get; }
-    public ICommandManager CommandManager { get; }
     /// <summary>
     /// 全局服务
     /// </summary>
