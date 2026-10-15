@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using Microsoft.Extensions.AI;
 
 namespace Mega.Platform.Web.Controllers;
 
@@ -13,8 +14,9 @@ public class ChatRequest
     [JsonPropertyName("session_id")]
     public string SessionId { get; set; } = Guid.NewGuid().ToString("N");
 
-    [JsonPropertyName("message")]
-    public string Message { get; set; } = string.Empty;
+    [JsonPropertyName("messages")]
+    [JsonConverter(typeof(ChatMessageListJsonConverter))]
+    public IList<ChatMessage> Messages { get; set; } = [];
 
     [JsonPropertyName("model")]
     public string Model { get; set; } = string.Empty;

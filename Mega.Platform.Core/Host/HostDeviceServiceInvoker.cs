@@ -24,6 +24,7 @@ internal class HostDeviceServiceInvoker : IDeviceServiceInvoker
         Throw.IfNull(request);
         var servicepath = MqttTopics.GetSubscribeTopic(MqttTopics.ServiceTopicTemplate, _commandRequest.ProductId, _commandRequest.DeviceId);
         request.ServiceId = _commandRequest.CommandId;
+        request.ServicePath = _commandRequest.CommandPath;
         request.ClientId = _commandRequest.DeviceId;
         request.ProductId = _commandRequest.ProductId;
         request.DeviceId = _commandRequest.DeviceId;

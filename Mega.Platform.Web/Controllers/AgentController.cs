@@ -49,7 +49,7 @@ public class AgentController : ControllerBase
         //{
         //    session = (DeviceAgentSession)await agent.CreateSessionAsync(cancellationToken);
         //}
-        var prompt = $"{chatRequest.Message}";
+        var prompt = $"{string.Join("\r\n", chatRequest.Messages.Select(m => m.Text))}";
 
         var response = await agent.RunAsync(prompt, null, null, cancellationToken);
         return new ChatResponse
@@ -70,9 +70,6 @@ public class AgentController : ControllerBase
                 name: mainAgentName,
                 model: chatRequest.Model,
                 instructions: "You are a helpful assistant that can control devices and provide information about them.",
-                //+ Environment.NewLine
-                //+ "##约束" + Environment.NewLine
-                //+ "- deviceServiceInvokeRequest参数不完整的时候，不允许调用工具，并给出相应的提示，告知缺少的参数",
                 tools: _aIToolManager.Tools(chatRequest.DeviceId)
              );
 

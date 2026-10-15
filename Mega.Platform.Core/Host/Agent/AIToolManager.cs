@@ -33,7 +33,7 @@ public class AIToolManager : IAIToolManager
             var callExpr = Expression.Call(invokerParam, invokeMethod, reqParam);
             var template = Expression.Lambda<Func<IDeviceServiceInvoker, DeviceServiceInvokeRequest, Task<DeviceServiceInvokeResponse>>>(callExpr, invokerParam, reqParam);
 
-            CommandFunction func = req => template.Compile()(_objectFactory.CreateObject<IDeviceServiceInvoker>(commandRequest), req);
+            CommandFunction func = req => template.Compile()(_objectFactory.CreateObject<HostDeviceServiceInvoker>(commandRequest), req);
 
             function = AIFunctionFactory.Create(func, commandRequest.CommandId, commandRequest.Description);
             _tools[key] = function;
