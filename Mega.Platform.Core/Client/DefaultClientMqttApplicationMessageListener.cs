@@ -21,6 +21,7 @@ public class DefaultClientMqttApplicationMessageListener : IClientMqttApplicatio
     {
         _logger = loggerFactory.CreateLogger<DefaultClientMqttApplicationMessageListener>();
         _mqttClient = mqttClient;
+        _mqttClient.ApplicationMessageReceivedAsync += OnApplicationMessageReceivedAsync;
         _commandManager = commandManager;
     }
 
