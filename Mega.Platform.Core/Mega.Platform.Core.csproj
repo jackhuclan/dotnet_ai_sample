@@ -14,4 +14,8 @@
 	<ItemGroup>
 		<InternalsVisibleTo Include="Mega.Platform.Core.UnitTests" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Host\Command\" />
+	</ItemGroup>
 </Project>

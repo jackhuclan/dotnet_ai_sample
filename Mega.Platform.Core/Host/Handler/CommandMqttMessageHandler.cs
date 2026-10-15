@@ -20,11 +20,11 @@ internal class CommandMqttMessageHandler : IMqttMessageHandler
 
     public Task<object> Handle(MqttApplicationMessageReceivedEventArgs args)
     {
-        var commandRequest = JsonSerializer.Deserialize<DeviceCommandReportRequest>(args.ApplicationMessage.Payload.ToStr());
+        var commandRequest = JsonSerializer.Deserialize<DeviceCommandRequest>(args.ApplicationMessage.Payload.ToStr());
         if (commandRequest == null)
         {
             _logger.LogError("Command request is null");
-            return Task.FromResult<object>(new DeviceCommandReportResponse
+            return Task.FromResult<object>(new DeviceCommandResponse
             {
                 Code = ErrorCodes.Sys.FAIL,
                 Message = "Command request is null",
@@ -32,7 +32,7 @@ internal class CommandMqttMessageHandler : IMqttMessageHandler
         }
 
         _aIToolManager.RegisterTool(commandRequest);
-        var response = new DeviceCommandReportResponse
+        var response = new DeviceCommandResponse
         {
             Code = ErrorCodes.Sys.SUCCESS,
             Message = "",

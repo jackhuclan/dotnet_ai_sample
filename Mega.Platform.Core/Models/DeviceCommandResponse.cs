@@ -4,7 +4,7 @@ using System.Text.Unicode;
 
 namespace Mega.Platform.Core.Models;
 
-public class DeviceCommandReportResponse
+public class DeviceCommandResponse
 {
     public string Code { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;

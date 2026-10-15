@@ -64,7 +64,7 @@ public class CommandManager : ICommandManager
     {
         try
         {
-            var request = new DeviceCommandReportRequest
+            var request = new DeviceCommandRequest
             {
                 ProductId = _deviceDescriptor.ProductId,
                 DeviceId = _deviceDescriptor.DeviceId,

@@ -1,15 +1,11 @@
-﻿using Mega.Platform.Core;
-using Mega.Platform.Core.Host;
+﻿using Mega.Platform.Core.Host;
 using Mega.Platform.Core.Host.Agent;
-using Mega.Platform.Core.Host.Command;
-using Mega.Platform.Core.Models;
 using Microsoft.Agents.AI;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using OpenAI.Responses;
 using System.ClientModel;
-using System.Text.Json;
 
 namespace Mega.Platform.Web.Controllers;
 
@@ -20,19 +16,16 @@ public class AgentController : ControllerBase
     private readonly ISessionManager _sessionManager;
     private readonly IDeviceManager _deviceManager;
     private readonly IAIToolManager _aIToolManager;
-    private readonly CameraCommandSet _cameraCommandSet;
 
     public AgentController(IAgentManager agentManager,
         ISessionManager sessionManager,
         IDeviceManager deviceManager,
-        IAIToolManager aIToolManager,
-        CameraCommandSet cameraCommandSet)
+        IAIToolManager aIToolManager)
     {
         _agentManager = agentManager;
         _sessionManager = sessionManager;
         _deviceManager = deviceManager;
         _aIToolManager = aIToolManager;
-        _cameraCommandSet = cameraCommandSet;
     }
 
     [HttpGet("/devices")]
@@ -56,20 +49,7 @@ public class AgentController : ControllerBase
         //{
         //    session = (DeviceAgentSession)await agent.CreateSessionAsync(cancellationToken);
         //}
-        var servicepath = MqttTopics.GetSubscribeTopic(MqttTopics.ServiceTopicTemplate, deviceDescriptor.ProductId, chatRequest.DeviceId);
-        var json = JsonSerializer.Serialize(new DeviceServiceInvokeRequest
-        {
-            ServiceId = "button1_Click",
-            ServicePath = "aoi/form1/button1_Click",
-            ClientId = "M001",
-            ProductId = deviceDescriptor.ProductId,
-            DeviceId = chatRequest.DeviceId,
-            RequestTopic = servicepath,
-            ReplyTopic = servicepath + "/reply",
-        });
-
-        var prompt = $"{chatRequest.Message}，执行参数deviceServiceInvokeRequest如下：" + Environment.NewLine
-            + json;
+        var prompt = $"{chatRequest.Message}";
 
         var response = await agent.RunAsync(prompt, null, null, cancellationToken);
         return new ChatResponse
@@ -77,6 +57,7 @@ public class AgentController : ControllerBase
             Event = "chat_response",
             Data = response.Text,
         };
+
 
         AIAgent CreateAgent()
         {
@@ -90,9 +71,9 @@ public class AgentController : ControllerBase
                 model: chatRequest.Model,
                 instructions: "You are a helpful assistant that can control devices and provide information about them.",
                 //+ Environment.NewLine
-                //              + "##约束" + Environment.NewLine
-                //              + "- deviceServiceInvokeRequest参数不完整的时候，不允许调用工具，并给出相应的提示，告知缺少的参数",
-                tools: _aIToolManager.Tools
+                //+ "##约束" + Environment.NewLine
+                //+ "- deviceServiceInvokeRequest参数不完整的时候，不允许调用工具，并给出相应的提示，告知缺少的参数",
+                tools: _aIToolManager.Tools(chatRequest.DeviceId)
              );
 
             //var agent = new DeviceChatAgent(chatClientAgent, new DeviceDescriptor
@@ -103,6 +84,5 @@ public class AgentController : ControllerBase
 
             return chatClientAgent;
         }
-
     }
 }

@@ -4,7 +4,7 @@ using System.Text.Unicode;
 
 namespace Mega.Platform.Core.Models;
 
-public record DeviceCommandReportRequest
+public record DeviceCommandRequest
 {
     /// <summary>
     /// 产品ID

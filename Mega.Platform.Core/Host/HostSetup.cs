@@ -1,6 +1,5 @@
 ﻿using Mega.Platform.Core.Client;
 using Mega.Platform.Core.Host.Agent;
-using Mega.Platform.Core.Host.Command;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Shared.Diagnostics;
@@ -20,10 +19,8 @@ public static class HostSetup
 
         services.AddMqttClient();
         services.AddHostedService<HostMqttClient>();
-        services.AddSingleton<IDeviceServiceInvoker, HostDeviceServiceInvoker>();
         services.AddSingleton<IMqttMessageDispatcher, MqttMessageDispatcher>();
         services.AddSingleton<IMqttMessageHandlerFactory, MqttMessageHandlerFactory>();
-        services.AddSingleton<IDeviceServiceInvoker, HostDeviceServiceInvoker>();
         services.AddSingleton<IMqttMessagePublisher, MqttMessagePublisher>();
         services.AddSingleton<IDeviceManager, DeviceManager>();
         services.AddSingleton<IObjectFactory, ObjectFactory>();
@@ -31,7 +28,6 @@ public static class HostSetup
         services.AddSingleton<IAgentManager, AgentManager>();
         services.AddSingleton<ISessionManager, SessionManager>();
         services.AddSingleton<IAIToolManager, AIToolManager>();
-        services.AddSingleton<CameraCommandSet>();
     }
 
     private static void AddMqttClient(this IServiceCollection services)

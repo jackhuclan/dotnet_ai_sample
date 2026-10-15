@@ -1,6 +1,7 @@
 using Mega.Platform.Core.Client;
 using Mega.Platform.Core.Client.Command;
 using Mega.Platform.Core.Models;
+using Microsoft.Extensions.AI;
 
 namespace Mega.Blade;
 
@@ -15,6 +16,9 @@ public partial class Form1 : Form
         Text = $"当前设备：{device.ProductId}/{device.DeviceId}";
     }
 
+#pragma warning disable MEAI001 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
+    [AIFunctionName("button1_Click")]
+#pragma warning restore MEAI001 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
     private void button1_Click(object sender, EventArgs e)
     {
         MessageBox.Show(this, "button1_Click!");

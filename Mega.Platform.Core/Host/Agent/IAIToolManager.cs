@@ -5,7 +5,11 @@ namespace Mega.Platform.Core.Host.Agent;
 
 public interface IAIToolManager
 {
-    IList<AITool> Tools { get; }
-
-    void RegisterTool(DeviceCommandReportRequest commandRequest);
+    void RegisterTool(DeviceCommandRequest commandRequest);
+    /// <summary>
+    /// 选择某个设备的可用工具集
+    /// </summary>
+    /// <param name="deviceId">设备id</param>
+    /// <returns></returns>
+    IList<AITool> Tools(string deviceId);
 }

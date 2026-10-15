@@ -7,22 +7,28 @@ namespace Mega.Platform.Core.Host;
 internal class HostDeviceServiceInvoker : IDeviceServiceInvoker
 {
     private readonly IMqttMessagePublisher _mqttMessagePublisher;
+    private readonly DeviceCommandRequest _commandRequest;
     private ILogger<HostDeviceServiceInvoker> _logger;
 
     public HostDeviceServiceInvoker(IMqttMessagePublisher mqttMessagePublisher,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory,
+        DeviceCommandRequest commandRequest)
     {
         _mqttMessagePublisher = mqttMessagePublisher;
+        _commandRequest = commandRequest;
         _logger = loggerFactory.CreateLogger<HostDeviceServiceInvoker>();
     }
 
     public async Task<DeviceServiceInvokeResponse> InvokeService(DeviceServiceInvokeRequest request)
     {
         Throw.IfNull(request);
-        Throw.IfNullOrEmpty(request.ServiceId);
-        Throw.IfNullOrEmpty(request.ServicePath);
-        Throw.IfNullOrEmpty(request.ProductId);
-        Throw.IfNullOrEmpty(request.DeviceId);
+        var servicepath = MqttTopics.GetSubscribeTopic(MqttTopics.ServiceTopicTemplate, _commandRequest.ProductId, _commandRequest.DeviceId);
+        request.ServiceId = _commandRequest.CommandId;
+        request.ClientId = _commandRequest.DeviceId;
+        request.ProductId = _commandRequest.ProductId;
+        request.DeviceId = _commandRequest.DeviceId;
+        request.RequestTopic = servicepath;
+        request.ReplyTopic = servicepath + "/reply";
 
         var response = await ExecuteServiceInvocation(request);
 

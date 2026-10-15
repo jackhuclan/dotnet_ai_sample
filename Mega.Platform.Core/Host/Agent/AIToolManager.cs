@@ -3,26 +3,27 @@ using Microsoft.Extensions.AI;
 using Microsoft.Shared.Diagnostics;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
-using System.Text.Json;
 
 namespace Mega.Platform.Core.Host.Agent;
 
 public class AIToolManager : IAIToolManager
 {
-    private readonly ConcurrentDictionary<string, AITool> _tools = new();
-    private readonly ConcurrentDictionary<string, JsonElement> _commands = new();
-    private readonly IDeviceServiceInvoker _deviceServiceInvoker;
+    private readonly ConcurrentDictionary<DeviceCommandRecord, AITool> _tools = new();
+    private readonly IObjectFactory _objectFactory;
 
-    public IList<AITool> Tools => _tools.Values.ToList();
+    public IList<AITool> Tools(string deviceId) => _tools.Where(x => string.Compare(x.Key.DeviceId, deviceId, true) == 0)
+        .Select(x => x.Value)
+        .ToList();
 
-    public AIToolManager(IDeviceServiceInvoker deviceServiceInvoker)
+    public AIToolManager(IObjectFactory objectFactory)
     {
-        _deviceServiceInvoker = deviceServiceInvoker;
+        _objectFactory = objectFactory;
     }
 
-    public void RegisterTool(DeviceCommandReportRequest commandRequest)
+    public void RegisterTool(DeviceCommandRequest commandRequest)
     {
-        if (!_tools.TryGetValue(commandRequest.CommandId, out var function))
+        var key = DeviceCommandRecord.From(commandRequest);
+        if (!_tools.TryGetValue(key, out var function))
         {
             var invokerParam = Expression.Parameter(typeof(IDeviceServiceInvoker), "invoker");
             var reqParam = Expression.Parameter(typeof(DeviceServiceInvokeRequest), "req");
@@ -32,10 +33,10 @@ public class AIToolManager : IAIToolManager
             var callExpr = Expression.Call(invokerParam, invokeMethod, reqParam);
             var template = Expression.Lambda<Func<IDeviceServiceInvoker, DeviceServiceInvokeRequest, Task<DeviceServiceInvokeResponse>>>(callExpr, invokerParam, reqParam);
 
-            CommandFunction func = req => template.Compile()(_deviceServiceInvoker, req);
+            CommandFunction func = req => template.Compile()(_objectFactory.CreateObject<IDeviceServiceInvoker>(commandRequest), req);
 
             function = AIFunctionFactory.Create(func, commandRequest.CommandId, commandRequest.Description);
-            _tools[commandRequest.CommandId] = function;
+            _tools[key] = function;
         }
     }
 }
