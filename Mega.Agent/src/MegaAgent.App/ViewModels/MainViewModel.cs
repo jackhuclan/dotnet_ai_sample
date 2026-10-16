@@ -243,19 +243,51 @@ public partial class MainViewModel : ObservableObject
         DraftInput = string.Empty;
     }
 
-    [RelayCommand]
-    private void DeleteConversation(ConversationViewModel? conv)
+    /// <summary>
+    /// 删除会话（不做二次确认，确认交互由 View 层的确认对话框负责）。
+    /// </summary>
+    public void DeleteConversation(ConversationViewModel? conv)
     {
         if (conv is null) return;
-        if (HandyControl.Controls.MessageBox.Show($"确定删除对话「{conv.Title}」吗？", "确认删除",
-                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
-            return;
-
+        conv.IsRenaming = false;
         _conversationStore.Conversations.Remove(conv.Model);
         Conversations.Remove(conv);
         if (CurrentConversation == conv)
             CurrentConversation = Conversations.FirstOrDefault();
         SaveConversations();
+    }
+
+    // ---------------- 重命名 ----------------
+
+    /// <summary>进入重命名状态：取消其它项的重命名，预填当前标题并全选。</summary>
+    public void BeginRename(ConversationViewModel? conv)
+    {
+        if (conv is null) return;
+        foreach (var c in Conversations)
+        {
+            if (ReferenceEquals(c, conv)) continue;
+            c.IsRenaming = false;
+        }
+        conv.RenameDraft = conv.Title;
+        conv.IsRenaming = true;
+    }
+
+    /// <summary>确认重命名：空白输入视为放弃修改，保持原标题。</summary>
+    public void CommitRename(ConversationViewModel? conv)
+    {
+        if (conv is null || !conv.IsRenaming) return;
+        var name = conv.RenameDraft.Trim();
+        if (name.Length > 0)
+            conv.Title = name;
+        conv.IsRenaming = false;
+        SaveConversations();
+    }
+
+    /// <summary>放弃重命名，保留原标题。</summary>
+    public void CancelRename(ConversationViewModel? conv)
+    {
+        if (conv is null) return;
+        conv.IsRenaming = false;
     }
 
     private void SaveConversations()

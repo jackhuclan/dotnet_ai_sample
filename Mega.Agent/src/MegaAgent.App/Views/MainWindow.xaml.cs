@@ -1,9 +1,11 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.Messaging;
 using MegaAgent.App.ViewModels;
 
@@ -18,6 +20,12 @@ public partial class MainWindow : Window
 
     private bool _sidebarOpen;
     private double _drawerWidth;
+
+    /// <summary>「…」菜单当前对应的会话。</summary>
+    private ConversationViewModel? _menuTarget;
+
+    /// <summary>「…」下拉菜单的内容总宽（Card 150 + Margin 8*2）。</summary>
+    private const double ConversationMenuTotalWidth = 166;
 
     public MainWindow()
     {
@@ -61,6 +69,7 @@ public partial class MainWindow : Window
         }
         else
         {
+            ConversationMenu.IsOpen = false;
             var slide = new DoubleAnimation { From = 0, To = -width, Duration = AnimDuration, EasingFunction = ease };
             slide.Completed += (_, _) =>
             {
@@ -70,6 +79,22 @@ public partial class MainWindow : Window
             SidebarScrim.BeginAnimation(OpacityProperty,
                 new DoubleAnimation { From = 1, To = 0, Duration = AnimDuration });
         }
+    }
+
+    // ---------------- 消息区滚动 ----------------
+
+    /// <summary>
+    /// 消息气泡里的 Markdown 渲染器（md:MarkdownScrollViewer）本身是 ScrollViewer，
+    /// 会把鼠标滚轮事件标记为已处理，导致外层消息列表收不到滚轮、内容不滚动。
+    /// 在 Preview（隧道）阶段就由外层接管：把滚轮增量换算成外层的垂直偏移。
+    /// </summary>
+    private void ChatScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (sender is not ScrollViewer viewer || e.Handled) return;
+
+        // 0.5 倍增量 ≈ 每格滚动 60px，与 WPF 默认「3 行」手感接近
+        viewer.ScrollToVerticalOffset(viewer.VerticalOffset - e.Delta * 0.5);
+        e.Handled = true;
     }
 
     // ---------------- 头像浮层菜单（聊天区右上角） ----------------
@@ -117,6 +142,120 @@ public partial class MainWindow : Window
         var dialog = new SkillsDialog(App.SkillStore) { Owner = this };
         dialog.ShowDialog();
         Vm?.RebuildSkillOptions();
+    }
+
+    // ---------------- 会话列表：… 菜单 / 重命名 / 删除 ----------------
+
+    /// <summary>拦住冒泡，避免点「…」时把该会话切成当前会话。</summary>
+    private void ConversationMore_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        => e.Handled = true;
+
+    private void ConversationMore_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        if (sender is FrameworkElement anchor)
+            ToggleConversationMenu(anchor);
+    }
+
+    /// <summary>键盘（空格/回车）激活路径。</summary>
+    private void ConversationMore_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement anchor)
+            ToggleConversationMenu(anchor);
+    }
+
+    private void ToggleConversationMenu(FrameworkElement anchor)
+    {
+        if (anchor.DataContext is not ConversationViewModel conv) return;
+
+        // 同一个「…」再点一次 = 收起
+        if (ConversationMenu.IsOpen && ReferenceEquals(_menuTarget, conv))
+        {
+            ConversationMenu.IsOpen = false;
+            return;
+        }
+
+        _menuTarget = conv;
+        ConversationMenu.PlacementTarget = anchor;
+        ConversationMenu.Placement = PlacementMode.Bottom;
+        // 右边缘与「…」对齐
+        ConversationMenu.HorizontalOffset = anchor.ActualWidth - ConversationMenuTotalWidth;
+        ConversationMenu.VerticalOffset = 2;
+        ConversationMenu.IsOpen = true;
+    }
+
+    private void MenuRename_Click(object sender, RoutedEventArgs e)
+    {
+        ConversationMenu.IsOpen = false;
+        Vm?.BeginRename(_menuTarget);
+    }
+
+    private void MenuDelete_Click(object sender, RoutedEventArgs e)
+    {
+        ConversationMenu.IsOpen = false;
+        ConfirmDelete(_menuTarget);
+    }
+
+    private void ContextRename_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem mi)
+            Vm?.BeginRename(mi.DataContext as ConversationViewModel);
+    }
+
+    private void ContextDelete_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem mi)
+            ConfirmDelete(mi.DataContext as ConversationViewModel);
+    }
+
+    /// <summary>删除前二次确认：确认才删，取消则什么都不做。</summary>
+    private void ConfirmDelete(ConversationViewModel? conv)
+    {
+        if (conv is null) return;
+        var dialog = new ConfirmDialog("删除会话", $"确认要删除「{conv.Title}」会话吗？", "删除")
+        {
+            Owner = this,
+        };
+        if (dialog.ShowDialog() == true)
+            Vm?.DeleteConversation(conv);
+    }
+
+    // ---------------- 会话重命名：行内文本框 ----------------
+
+    /// <summary>文本框出现时自动聚焦并全选标题。</summary>
+    private void RenameBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (sender is not TextBox box || e.NewValue is not true) return;
+        box.Dispatcher.BeginInvoke(new Action(() =>
+        {
+            box.Focus();
+            box.SelectAll();
+        }), DispatcherPriority.Input);
+    }
+
+    /// <summary>Enter 确认重命名，Esc 放弃。</summary>
+    private void RenameBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox box) return;
+        var conv = box.DataContext as ConversationViewModel;
+        switch (e.Key)
+        {
+            case Key.Enter:
+                e.Handled = true;
+                Vm?.CommitRename(conv);
+                break;
+            case Key.Escape:
+                e.Handled = true;
+                Vm?.CancelRename(conv);
+                break;
+        }
+    }
+
+    /// <summary>点到别处也算编辑完成。</summary>
+    private void RenameBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is not TextBox box) return;
+        Vm?.CommitRename(box.DataContext as ConversationViewModel);
     }
 
     // ---------------- 输入框按键（斜杠技能浮层 + 发送） ----------------

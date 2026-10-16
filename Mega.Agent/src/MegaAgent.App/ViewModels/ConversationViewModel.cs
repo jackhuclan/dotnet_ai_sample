@@ -23,6 +23,14 @@ public partial class ConversationViewModel : ObservableObject
     [ObservableProperty]
     private string? _skillId;
 
+    /// <summary>是否处于「重命名」状态：列表项以文本框呈现。</summary>
+    [ObservableProperty]
+    private bool _isRenaming;
+
+    /// <summary>重命名时的编辑缓冲区（未确认前不改动 Title）。</summary>
+    [ObservableProperty]
+    private string _renameDraft = string.Empty;
+
     public ConversationViewModel(Conversation model)
     {
         Model = model;

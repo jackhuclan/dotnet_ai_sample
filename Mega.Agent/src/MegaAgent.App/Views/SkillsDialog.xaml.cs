@@ -1,83 +1,35 @@
-using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Input;
+using MegaAgent.App.ViewModels;
 using MegaAgent.Core.Models;
 using MegaAgent.Core.Services;
 
 namespace MegaAgent.App;
 
-public partial class SkillsDialog : Window
+/// <summary>
+/// 技能管理对话框。列表状态与增删改逻辑都在 <see cref="SkillsDialogViewModel"/>；
+/// 本类只实现 <see cref="IDialogService"/>，把「打开编辑器」「弹确认框」这类窗口级能力提供给 ViewModel。
+/// </summary>
+public partial class SkillsDialog : Window, IDialogService
 {
-    private readonly SkillStore _store;
-    private readonly ObservableCollection<Skill> _skills = new();
-
     public SkillsDialog(SkillStore store)
     {
         InitializeComponent();
-        _store = store;
-        foreach (var s in store.Skills)
-            _skills.Add(s);
-        SkillList.ItemsSource = _skills;
+
+        var vm = new SkillsDialogViewModel(store, this);
+        vm.CloseRequested += (_, _) => Close();
+
+        DataContext = vm;
     }
 
-    private void AddButton_Click(object sender, RoutedEventArgs e)
+    /// <inheritdoc />
+    public bool ShowSkillEditor(Skill skill)
     {
-        var skill = new Skill { Name = "新技能", Description = "", Prompt = "" };
         var editor = new SkillEditorDialog(skill) { Owner = this };
-        if (editor.ShowDialog() == true)
-        {
-            _skills.Add(skill);
-            Persist();
-            SkillList.SelectedItem = skill;
-        }
+        return editor.ShowDialog() == true;
     }
 
-    private void EditButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (SkillList.SelectedItem is not Skill selected)
-        {
-            HandyControl.Controls.MessageBox.Show("请先选择一个技能。", "提示",
-                MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        var editor = new SkillEditorDialog(selected) { Owner = this };
-        if (editor.ShowDialog() == true)
-        {
-            var index = _skills.IndexOf(selected);
-            _skills[index] = selected;
-            Persist();
-        }
-    }
-
-    private void DeleteButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (SkillList.SelectedItem is not Skill selected)
-        {
-            HandyControl.Controls.MessageBox.Show("请先选择一个技能。", "提示",
-                MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        if (HandyControl.Controls.MessageBox.Show($"确定删除技能「{selected.Name}」吗？", "确认删除",
-                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
-            return;
-
-        _skills.Remove(selected);
-        Persist();
-    }
-
-    private void SkillList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        if (SkillList.SelectedItem is Skill)
-            EditButton_Click(sender, e);
-    }
-
-    private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
-
-    private void Persist()
-    {
-        _store.Skills = _skills.ToList();
-        _store.Save();
-    }
+    /// <inheritdoc />
+    public bool Confirm(string message, string title) =>
+        HandyControl.Controls.MessageBox.Show(message, title,
+            MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 }

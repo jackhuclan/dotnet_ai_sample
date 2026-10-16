@@ -1,7 +1,8 @@
 <Application x:Class="MegaAgent.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:md="clr-namespace:MdXaml;assembly=MdXaml">
+             xmlns:md="clr-namespace:MdXaml;assembly=MdXaml"
+             xmlns:conv="clr-namespace:MegaAgent.App.Converters">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -9,6 +10,12 @@
                 <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/SkinDefault.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/Theme.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- ==================== 全局转换器（各对话框共用） ==================== -->
+            <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
+            <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+            <conv:NullToVisibilityConverter x:Key="NullToVis" />
+            <conv:CountToVisibilityConverter x:Key="CountToVis" />
 
             <!-- ==================== 少量自定义样式（仅承载布局语义） ==================== -->
 
