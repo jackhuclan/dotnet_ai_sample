@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MegaAgent.Core.Abstractions;
 using MegaAgent.Core.Models;
+using Microsoft.Extensions.Logging;
 
 namespace MegaAgent.App.ViewModels;
 
@@ -16,6 +17,7 @@ public partial class MainViewModel : ObservableObject
     private readonly IConversationStore _conversationStore;
     private readonly IAgentService _agentService;
     private readonly IDialogService _dialogs;
+    private readonly ILogger<MainViewModel> _logger;
     private CancellationTokenSource? _cts;
 
     public ObservableCollection<ConversationViewModel> Conversations { get; } = new();
@@ -66,13 +68,15 @@ public partial class MainViewModel : ObservableObject
         ISettingsStore settingsStore,
         ISkillStore skillStore,
         IConversationStore conversationStore,
-        IAgentService agentService)
+        IAgentService agentService,
+        ILogger<MainViewModel> logger)
     {
         _dialogs = dialogs;
         _settingsStore = settingsStore;
         _skillStore = skillStore;
         _conversationStore = conversationStore;
         _agentService = agentService;
+        _logger = logger;
 
         // 历史会话的模型名若不在当前可选列表中，回落到默认模型
         var migrated = false;
@@ -86,11 +90,18 @@ public partial class MainViewModel : ObservableObject
             Conversations.Add(new ConversationViewModel(c));
         }
         if (migrated)
+        {
+            _logger.LogInformation("已把 {Count} 个历史会话的模型回落到 {Model}",
+                _conversationStore.Conversations.Count, _settingsStore.Current.DefaultModel);
             _conversationStore.Save();
+        }
 
         RebuildSkillOptions();
         RefreshApiKeyStatus();
         CurrentConversation = Conversations.FirstOrDefault();
+
+        _logger.LogInformation("主界面就绪：历史会话 {ConversationCount} 条，可选技能 {SkillCount} 个，默认模型 {Model}",
+            Conversations.Count, _skillStore.Skills.Count, _settingsStore.Current.DefaultModel);
     }
 
     public void RefreshApiKeyStatus()
@@ -242,6 +253,8 @@ public partial class MainViewModel : ObservableObject
         CurrentConversation = vm;
         SaveConversations();
         DraftInput = string.Empty;
+
+        _logger.LogInformation("已新建会话 {ConversationId}（模型 {Model}）", conv.Id, conv.ModelId);
     }
 
     /// <summary>
@@ -256,6 +269,8 @@ public partial class MainViewModel : ObservableObject
         if (CurrentConversation == conv)
             CurrentConversation = Conversations.FirstOrDefault();
         SaveConversations();
+
+        _logger.LogInformation("已删除会话 {ConversationId}（{Title}）", conv.Model.Id, conv.Title);
     }
 
     // ---------------- 重命名 ----------------
@@ -295,7 +310,17 @@ public partial class MainViewModel : ObservableObject
     {
         foreach (var c in Conversations)
             c.SyncToModel();
-        _conversationStore.Save();
+
+        try
+        {
+            _conversationStore.Save();
+        }
+        catch (Exception ex)
+        {
+            // 落盘失败不能中断交互：记录后由用户在日志里追溯
+            _logger.LogError(ex, "会话写盘失败，本次改动仅存在于内存：{Path}",
+                MegaAgent.Core.Services.StoragePaths.ConversationsPath);
+        }
     }
 
     // ---------------- 发送 / 停止 ----------------
@@ -355,6 +380,8 @@ public partial class MainViewModel : ObservableObject
         }
         catch (OperationCanceledException)
         {
+            _logger.LogInformation("用户中止了回答生成：会话 {ConversationId}，已接收 {CharCount} 字",
+                conv.Model.Id, placeholder.Content.Length);
             placeholder.AppendChunk(string.IsNullOrEmpty(placeholder.Content)
                 ? "（已停止生成）"
                 : "\n\n（已停止生成）");
@@ -362,6 +389,8 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "对话调用失败：会话 {ConversationId}，模型 {Model}",
+                conv.Model.Id, conv.Model.ModelId);
             placeholder.AppendChunk(string.IsNullOrEmpty(placeholder.Content)
                 ? $"⚠ 调用失败：{ex.Message}"
                 : $"\n\n⚠ 调用中断：{ex.Message}");

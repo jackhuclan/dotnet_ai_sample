@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MegaAgent.Core.Abstractions;
 using MegaAgent.Core.Models;
+using Microsoft.Extensions.Logging;
 
 namespace MegaAgent.App.ViewModels;
 
@@ -14,6 +15,7 @@ public partial class SettingsDialogViewModel : ObservableObject
 {
     private readonly ISettingsStore _store;
     private readonly IAgentService _agentService;
+    private readonly ILogger<SettingsDialogViewModel> _logger;
 
     public string[] AvailableModels => AppSettings.AvailableModels;
 
@@ -55,10 +57,14 @@ public partial class SettingsDialogViewModel : ObservableObject
     /// <summary>请求 View 关闭对话框，参数为 DialogResult（null 表示仅关闭）。</summary>
     public event EventHandler<bool?>? CloseRequested;
 
-    public SettingsDialogViewModel(ISettingsStore store, IAgentService agentService)
+    public SettingsDialogViewModel(
+        ISettingsStore store,
+        IAgentService agentService,
+        ILogger<SettingsDialogViewModel> logger)
     {
         _store = store;
         _agentService = agentService;
+        _logger = logger;
         _apiKey = store.Current.ApiKey ?? string.Empty;
         _endpoint = store.Current.Endpoint ?? string.Empty;
         _selectedModel = store.Current.DefaultModel is { Length: > 0 } m
@@ -70,10 +76,14 @@ public partial class SettingsDialogViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanSubmit))]
     private void Save()
     {
+        var oldModel = _store.Current.DefaultModel;
         _store.Current.ApiKey = ApiKey.Trim();
         _store.Current.Endpoint = Endpoint.Trim();
         _store.Current.DefaultModel = SelectedModel;
         _store.Save();
+
+        _logger.LogInformation("模型设置已保存：模型 {OldModel} → {NewModel}，端点 {Endpoint}",
+            oldModel, SelectedModel, Endpoint.Trim());
         CloseRequested?.Invoke(this, true);
     }
 
@@ -94,6 +104,7 @@ public partial class SettingsDialogViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            _logger.LogWarning(ex, "连通性测试未通过：模型 {Model}", SelectedModel);
             StatusText = $"❌ 连接失败：{ex.Message}";
         }
         finally

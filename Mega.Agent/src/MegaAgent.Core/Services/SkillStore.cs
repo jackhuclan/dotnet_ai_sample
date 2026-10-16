@@ -1,6 +1,7 @@
 using System.Text.Json;
 using MegaAgent.Core.Abstractions;
 using MegaAgent.Core.Models;
+using Microsoft.Extensions.Logging;
 
 namespace MegaAgent.Core.Services;
 
@@ -13,6 +14,10 @@ public class SkillStore : ISkillStore
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
+    private readonly ILogger<SkillStore> _logger;
+
+    public SkillStore(ILogger<SkillStore> logger) => _logger = logger;
+
     public List<Skill> Skills { get; set; } = new();
 
     public void Load()
@@ -20,12 +25,24 @@ public class SkillStore : ISkillStore
         StoragePaths.EnsureDir();
         if (File.Exists(StoragePaths.SkillsPath))
         {
-            var json = File.ReadAllText(StoragePaths.SkillsPath);
-            Skills = JsonSerializer.Deserialize<List<Skill>>(json) ?? new List<Skill>();
-            return;
+            try
+            {
+                var json = File.ReadAllText(StoragePaths.SkillsPath);
+                Skills = JsonSerializer.Deserialize<List<Skill>>(json) ?? new List<Skill>();
+                _logger.LogInformation("技能库已加载：{Count} 个技能（{Path}）", Skills.Count, StoragePaths.SkillsPath);
+                return;
+            }
+            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+            {
+                _logger.LogError(ex, "技能库解析失败，回落内置示例技能：{Path}", StoragePaths.SkillsPath);
+            }
+        }
+        else
+        {
+            _logger.LogInformation("未找到技能库文件，写入内置示例技能：{Path}", StoragePaths.SkillsPath);
         }
 
-        // 首次运行预置示例技能
+        // 首次运行（或文件损坏）预置示例技能
         Skills =
         [
             new Skill
@@ -49,6 +66,15 @@ public class SkillStore : ISkillStore
     public void Save()
     {
         StoragePaths.EnsureDir();
-        File.WriteAllText(StoragePaths.SkillsPath, JsonSerializer.Serialize(Skills, JsonOptions));
+        try
+        {
+            File.WriteAllText(StoragePaths.SkillsPath, JsonSerializer.Serialize(Skills, JsonOptions));
+            _logger.LogDebug("技能库已保存：{Count} 个技能", Skills.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "技能库保存失败：{Path}", StoragePaths.SkillsPath);
+            throw;
+        }
     }
 }

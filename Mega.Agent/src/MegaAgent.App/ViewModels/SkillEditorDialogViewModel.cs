@@ -1,16 +1,19 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MegaAgent.Core.Models;
+using Microsoft.Extensions.Logging;
 
 namespace MegaAgent.App.ViewModels;
 
 /// <summary>
 /// 「编辑技能」对话框 ViewModel：技能草稿字段、实时必填校验与保存/取消命令。
 /// 保存成功后直接写回传入的 <see cref="Skill"/> 实例，由调用方负责持久化。
+/// 运行期参数 <see cref="Skill"/> 由 ActivatorUtilities 传入，日志器由容器注入。
 /// </summary>
 public partial class SkillEditorDialogViewModel : ObservableObject
 {
     private readonly Skill _skill;
+    private readonly ILogger<SkillEditorDialogViewModel> _logger;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(NameHasError))]
@@ -45,9 +48,10 @@ public partial class SkillEditorDialogViewModel : ObservableObject
     /// <summary>请求 View 关闭对话框，参数为 DialogResult（null 表示仅关闭）。</summary>
     public event EventHandler<bool?>? CloseRequested;
 
-    public SkillEditorDialogViewModel(Skill skill)
+    public SkillEditorDialogViewModel(Skill skill, ILogger<SkillEditorDialogViewModel> logger)
     {
         _skill = skill;
+        _logger = logger;
         _name = skill.Name ?? string.Empty;
         _description = skill.Description ?? string.Empty;
         _prompt = skill.Prompt ?? string.Empty;
@@ -59,6 +63,8 @@ public partial class SkillEditorDialogViewModel : ObservableObject
         _skill.Name = Name.Trim();
         _skill.Description = Description.Trim();
         _skill.Prompt = Prompt.Trim();
+        _logger.LogInformation("技能草稿已提交保存：{SkillId}「{Name}」（{PromptLength} 字提示词）",
+            _skill.Id, _skill.Name, _skill.Prompt.Length);
         CloseRequested?.Invoke(this, true);
     }
 

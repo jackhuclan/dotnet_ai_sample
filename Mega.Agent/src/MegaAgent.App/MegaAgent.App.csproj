@@ -17,6 +17,16 @@
     <PackageReference Include="MdXaml" Version="2.0.0-pre202603081301" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <!-- 日志：NLog 内核 6.2.2 + Host / ILogger 接线（NLog.Extensions.Hosting 含 NLog.Extensions.Logging） -->
+    <PackageReference Include="NLog" Version="6.2.2" />
+    <PackageReference Include="NLog.Extensions.Hosting" Version="6.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- NLog 配置随生成目录输出，运行期由 NLog 自动加载（见 LoggingRegistration） -->
+    <None Update="NLog.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

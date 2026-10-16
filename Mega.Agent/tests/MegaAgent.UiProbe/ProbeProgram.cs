@@ -43,6 +43,7 @@ internal static class ProbeProgram
         DumpPasswordBoxInfo();
 
         ProbeServiceGraph();
+        ProbeLogging();
         ProbeSettingsDialog();
         ProbeSkillEditorDialog();
         ProbeSkillsDialog();
@@ -58,19 +59,65 @@ internal static class ProbeProgram
 
     /// <summary>
     /// 用与应用启动完全相同的注册方式构建容器，并加载持久化数据。
+    /// 日志同样走 NLog（AddMegaAgentLogging），保证探针与真实应用的日志路径一致。
     /// 每个探针用例各建一份，保证用例之间互不污染。
     /// </summary>
     private static IHost CreateHost()
     {
         var builder = Host.CreateApplicationBuilder();
-        builder.Logging.ClearProviders();
-        builder.Logging.AddDebug();
+        builder.AddMegaAgentLogging();
         builder.Services.AddMegaAgentServices();
 
         var host = builder.Build();
         host.Services.GetRequiredService<IStorageInitializer>().Initialize();
         return host;
     }
+
+    /// <summary>
+    /// 校验 NLog 接线：ILogger&lt;T&gt; 可解析、能落盘、且不重复输出（只注册了一个 provider），
+    /// 同时验证异常日志会额外进入 error 专用文件。
+    /// </summary>
+    private static void ProbeLogging()
+    {
+        using var host = CreateHost();
+        var sp = host.Services;
+
+        var logger = sp.GetRequiredService<ILogger<MainViewModel>>();
+        var providerCount = sp.GetServices<ILoggerProvider>().Count();
+
+        // 唯一标记，用于在日志文件里精确检索（避免和真实运行的历史日志混淆）
+        var marker = "PROBE-" + Guid.NewGuid().ToString("N")[..8];
+        logger.LogInformation("探针日志写入校验 {Marker}", marker);
+        logger.LogError(new InvalidOperationException("探针故意抛出的异常"),
+            "探针错误日志写入校验 {Marker}", marker);
+
+        // AsyncWrapper 是异步刷盘，等待队列落盘后再读文件
+        LoggingRegistrationExtensions.Shutdown();
+
+        var dir = LogPaths.Directory;
+        var today = DateTime.Now.ToString("yyyy-MM-dd");
+        var mainFile = Path.Combine(dir, $"megaagent-{today}.log");
+        var errorFile = Path.Combine(dir, $"megaagent-error-{today}.log");
+
+        var mainHits = CountOccurrences(mainFile, marker);
+        var errorHits = CountOccurrences(errorFile, marker);
+
+        Console.WriteLine($"[log] 日志目录         -> {dir}");
+        Console.WriteLine($"[log] 已注册日志提供程序 -> {providerCount}");
+        Console.WriteLine($"[log] 全量日志 {Path.GetFileName(mainFile)} 命中 {mainHits} 次（期望 2，其中 Error 一次）");
+        Console.WriteLine($"[log] 错误日志 {Path.GetFileName(errorFile)} 命中 {errorHits} 次（期望 1）");
+        Console.WriteLine($"[log] 异常堆栈已记录     -> {File.ReadAllText(errorFile).Contains("InvalidOperationException")}");
+
+        var pass = providerCount == 1
+                   && mainHits == 2      // 无重复 provider：Info + Error 各一次
+                   && errorHits == 1;    // Error 单列到错误文件
+        Console.WriteLine(pass ? "LOGGING PASS" : "LOGGING FAIL");
+    }
+
+    private static int CountOccurrences(string path, string needle)
+        => !File.Exists(path)
+            ? 0
+            : File.ReadAllLines(path).Count(line => line.Contains(needle, StringComparison.Ordinal));
 
     /// <summary>
     /// 与 <see cref="DialogService.ShowSkillEditor"/> 完全相同的构造方式：
