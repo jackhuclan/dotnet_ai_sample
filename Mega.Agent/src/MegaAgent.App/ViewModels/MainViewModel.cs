@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -54,6 +55,58 @@ public partial class MainViewModel : ObservableObject
 
     public bool HasCurrentConversation => CurrentConversation is not null;
 
+    /// <summary>
+    /// 有当前会话、但该会话里还没有任何消息 → 显示「还没有消息，输入内容开始对话吧」。
+    /// 与「无会话」提示互斥：无会话时 CurrentConversation 为 null，由另一条提示负责。
+    /// </summary>
+    public bool ShowEmptyChatHint =>
+        CurrentConversation is not null && CurrentConversation.Messages.Count == 0;
+
+    /// <summary>
+    /// 输入区「模型」下拉的选中项。
+    /// 有当前会话时读写该会话的模型；没有会话（冷启动 / 会话被删光）时回落到
+    /// 「模型设置」里的默认模型，保证下拉框任何时候都有值、都能切换，
+    /// 且新建会话会沿用这里选的模型。
+    /// </summary>
+    public string SelectedModel
+    {
+        get
+        {
+            var model = CurrentConversation?.ModelId ?? _settingsStore.Current.DefaultModel;
+            return AppSettings.AvailableModels.Contains(model) ? model : AppSettings.AvailableModels[0];
+        }
+        set
+        {
+            if (string.IsNullOrWhiteSpace(value)) return;
+            var model = AppSettings.AvailableModels.Contains(value) ? value : AppSettings.AvailableModels[0];
+
+            if (CurrentConversation is { } conv)
+            {
+                if (conv.ModelId == model) return;
+                conv.ModelId = model;
+                _logger.LogInformation("会话 {ConversationId} 切换模型为 {Model}", conv.Model.Id, model);
+                SaveConversations();
+            }
+            else
+            {
+                if (_settingsStore.Current.DefaultModel == model) return;
+                _settingsStore.Current.DefaultModel = model;
+                try
+                {
+                    _settingsStore.Save();
+                }
+                catch (Exception ex)
+                {
+                    // 落盘失败不阻断交互，仅记录
+                    _logger.LogError(ex, "默认模型写盘失败：{Model}", model);
+                }
+                _logger.LogInformation("当前无会话，模型下拉把默认模型改为 {Model}（新建会话沿用）", model);
+            }
+
+            OnPropertyChanged();
+        }
+    }
+
     /// <summary>当前会话是否已挂载技能（用于输入区 chip 显示）。</summary>
     public bool HasActiveSkill => SelectedSkillOption?.Id is not null;
 
@@ -98,7 +151,18 @@ public partial class MainViewModel : ObservableObject
 
         RebuildSkillOptions();
         RefreshApiKeyStatus();
-        CurrentConversation = Conversations.FirstOrDefault();
+
+        if (Conversations.Count == 0)
+        {
+            // 冷启动没有任何历史会话：默认预置一个空会话，用户打开应用即可直接输入
+            var created = CreateConversation();
+            _logger.LogInformation("冷启动未发现历史会话，已自动新建会话 {ConversationId}（模型 {Model}）",
+                created.Model.Id, created.Model.ModelId);
+        }
+        else
+        {
+            CurrentConversation = Conversations.FirstOrDefault();
+        }
 
         _logger.LogInformation("主界面就绪：历史会话 {ConversationCount} 条，可选技能 {SkillCount} 个，默认模型 {Model}",
             Conversations.Count, _skillStore.Skills.Count, _settingsStore.Current.DefaultModel);
@@ -111,12 +175,31 @@ public partial class MainViewModel : ObservableObject
             : "未配置 API Key";
     }
 
+    /// <summary>
+    /// 切换会话时解绑上一个会话的消息集合变更监听。
+    /// 参数名必须与生成器声明一致（这里传进来的是「被替换掉」的旧会话）。
+    /// </summary>
+    partial void OnCurrentConversationChanging(ConversationViewModel? value)
+    {
+        if (value is not null)
+            value.Messages.CollectionChanged -= OnCurrentMessagesChanged;
+    }
+
     partial void OnCurrentConversationChanged(ConversationViewModel? value)
     {
         if (value is not null)
+        {
+            // 消息增删会改变空状态提示的显隐
+            value.Messages.CollectionChanged += OnCurrentMessagesChanged;
             SelectedSkillOption = SkillOptions.FirstOrDefault(o => o.Id == value.SkillId) ?? SafeDefaultSkillOption();
+        }
+        OnPropertyChanged(nameof(ShowEmptyChatHint));
+        OnPropertyChanged(nameof(SelectedModel));
         SendMessageCommand.NotifyCanExecuteChanged();
     }
+
+    private void OnCurrentMessagesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        => OnPropertyChanged(nameof(ShowEmptyChatHint));
 
     partial void OnSelectedSkillOptionChanged(SkillOption? value)
     {
@@ -241,6 +324,18 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
+        var vm = CreateConversation();
+        SaveConversations();
+
+        _logger.LogInformation("已新建会话 {ConversationId}（模型 {Model}）", vm.Model.Id, vm.Model.ModelId);
+    }
+
+    /// <summary>
+    /// 建一个空会话：插到列表最前、切成当前会话。
+    /// 「新建对话」命令与冷启动预置会话共用这段逻辑。
+    /// </summary>
+    private ConversationViewModel CreateConversation()
+    {
         var conv = new Conversation
         {
             ModelId = _settingsStore.Current.DefaultModel,
@@ -250,11 +345,9 @@ public partial class MainViewModel : ObservableObject
         _conversationStore.Conversations.Insert(0, conv);
         var vm = new ConversationViewModel(conv);
         Conversations.Insert(0, vm);
-        CurrentConversation = vm;
-        SaveConversations();
         DraftInput = string.Empty;
-
-        _logger.LogInformation("已新建会话 {ConversationId}（模型 {Model}）", conv.Id, conv.ModelId);
+        CurrentConversation = vm;
+        return vm;
     }
 
     /// <summary>

@@ -35,7 +35,7 @@ public static class LoggingRegistrationExtensions
         // 1) 摘掉默认 provider（Console / Debug / EventSource），避免一行日志被多套管道重复输出
         builder.Logging.ClearProviders();
 
-        // 2) 日志目录与配置目录一起准备好（配置里写的是 %APPDATA%\MegaAgent\logs）
+        // 2) 日志目录与配置目录一起准备好（配置里的 logDir 与 LogPaths.Directory 一致）
         LogPaths.EnsureDir();
 
         // 3) 先显式加载一次 NLog 配置：让 Host 构建完成之前的静态 LogManager 调用也已生效

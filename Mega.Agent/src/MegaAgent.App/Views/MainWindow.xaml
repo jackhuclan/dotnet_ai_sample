@@ -255,12 +255,12 @@
                                   ItemTemplate="{StaticResource MessageTemplate}" />
                 </ScrollViewer>
 
-                <!-- 空状态 -->
+                <!-- 空状态：有会话但没有消息 -->
                 <hc:Empty VerticalAlignment="Center" HorizontalAlignment="Center"
                           Description="还没有消息，输入内容开始对话吧"
-                          Visibility="{Binding CurrentConversation.Messages.Count, Converter={StaticResource CountToVis}}" />
+                          Visibility="{Binding ShowEmptyChatHint, Converter={StaticResource BoolToVis}}" />
 
-                <!-- 无会话状态 -->
+                <!-- 无会话状态：一个会话都没有（与上面的空状态互斥） -->
                 <hc:Empty VerticalAlignment="Center" HorizontalAlignment="Center"
                           Description="点击左上角「☰」打开会话列表开始"
                           Visibility="{Binding CurrentConversation, Converter={StaticResource NullToVis}}" />
@@ -354,9 +354,8 @@
                                      Style="{StaticResource ComboBoxExtend}"
                                      IsEditable="False"
                                      ItemsSource="{Binding AvailableModels}"
-                                     SelectedItem="{Binding CurrentConversation.ModelId, Mode=TwoWay}"
-                                     ToolTip="选择模型"
-                                     IsEnabled="{Binding HasCurrentConversation}" />
+                                     SelectedItem="{Binding SelectedModel, Mode=TwoWay}"
+                                     ToolTip="选择模型（新建会话沿用此处选择）" />
                         <TextBlock Grid.Column="1"
                                    Margin="10,0,8,0"
                                    VerticalAlignment="Center"

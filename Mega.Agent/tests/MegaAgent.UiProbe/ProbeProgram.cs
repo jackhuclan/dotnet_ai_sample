@@ -51,6 +51,7 @@ internal static class ProbeProgram
         ProbeAvatarMenu();
         ProbeEnterSend();
         ProbeConversationMenu();
+        ProbeNoConversation();
 
         Console.WriteLine("probe done");
     }
@@ -106,7 +107,8 @@ internal static class ProbeProgram
         Console.WriteLine($"[log] 已注册日志提供程序 -> {providerCount}");
         Console.WriteLine($"[log] 全量日志 {Path.GetFileName(mainFile)} 命中 {mainHits} 次（期望 2，其中 Error 一次）");
         Console.WriteLine($"[log] 错误日志 {Path.GetFileName(errorFile)} 命中 {errorHits} 次（期望 1）");
-        Console.WriteLine($"[log] 异常堆栈已记录     -> {File.ReadAllText(errorFile).Contains("InvalidOperationException")}");
+        Console.WriteLine($"[log] 异常堆栈已记录     -> " +
+                          $"{File.Exists(errorFile) && File.ReadAllText(errorFile).Contains("InvalidOperationException")}");
 
         var pass = providerCount == 1
                    && mainHits == 2      // 无重复 provider：Info + Error 各一次
@@ -767,6 +769,114 @@ internal static class ProbeProgram
             RestoreConversations(backup);
         }
     }
+
+    /// <summary>
+    /// 冷启动场景（一个会话都没有）：模型下拉必须仍有可选项、两个空状态提示不得同时可见。
+    /// 通过临时移走 conversations.json 复现「无会话」，并可验证「有会话但无消息」的空状态。
+    /// 会短暂改动 config.json（切换默认模型），结束前还原。
+    /// </summary>
+    private static void ProbeNoConversation()
+    {
+        var conversationsBackup = BackupConversations();
+        var configBackup = BackupFile(StoragePaths.ConfigPath);
+        try
+        {
+            // 构造「一个会话都没有」的冷启动
+            if (File.Exists(StoragePaths.ConversationsPath))
+                File.Delete(StoragePaths.ConversationsPath);
+
+            using var host = CreateHost();
+            var sp = host.Services;
+            var vm = sp.GetRequiredService<MainViewModel>();
+            var win = sp.GetRequiredService<MainWindow>();
+            win.Left = -4000;
+            win.Top = -4000;
+            win.ShowActivated = false;
+            win.Show();
+            Pump();
+
+            var combo = Descendants(win).OfType<ComboBox>().FirstOrDefault();
+            var settings = sp.GetRequiredService<ISettingsStore>();
+
+            // ---------- A. 冷启动：没有会话文件时应自动预置一个空会话 ----------
+            var autoCount = vm.Conversations.Count;
+            var autoCurrent = vm.CurrentConversation;
+            var emptiesA = VisibleEmpties(win);
+            Console.WriteLine($"[冷启动] 会话数 = {autoCount}（期望 1），当前会话 = {(autoCurrent is null ? "null" : "已选中")}，" +
+                              $"标题 = \"{autoCurrent?.Title}\"，模型 = {autoCurrent?.ModelId}");
+            Console.WriteLine($"[冷启动·模型下拉] 启用={combo?.IsEnabled} 选项数={combo?.Items.Count} 选中=\"{combo?.SelectedItem}\"");
+            Console.WriteLine($"[冷启动·空状态] 可见提示 {emptiesA.Count} 条：{string.Join(" ｜ ", emptiesA)}");
+            Save(win, "98-cold-start-auto-conversation");
+
+            // ---------- B. 把会话全删光 → 回到「无会话」状态 ----------
+            foreach (var c in vm.Conversations.ToList())
+                vm.DeleteConversation(c);
+            Pump();
+
+            var countB = vm.Conversations.Count;
+            var currentIsNull = vm.CurrentConversation is null;
+            var itemsB = combo?.Items.Count ?? -1;
+            var selectedB = combo?.SelectedItem as string;
+            var enabledB = combo?.IsEnabled == true;
+            var emptiesB = VisibleEmpties(win);
+            Console.WriteLine($"[无会话] 会话数 = {countB}，当前会话为空 = {currentIsNull}");
+            Console.WriteLine($"[无会话·模型下拉] 启用={enabledB} 选项数={itemsB} 选中=\"{selectedB}\"");
+            Console.WriteLine($"[无会话·空状态] 可见提示 {emptiesB.Count} 条：{string.Join(" ｜ ", emptiesB)}");
+            Save(win, "99-no-conversation-after-delete");
+
+            // 无会话时切换模型：应写回「默认模型」，新建会话沿用
+            var picked = AppSettings.AvailableModels[^1];
+            if (combo is not null) combo.SelectedItem = picked;
+            Pump();
+            Console.WriteLine($"[无会话·切换模型] DefaultModel = {settings.Current.DefaultModel}（期望 {picked}）");
+
+            vm.NewConversationCommand.Execute(null);
+            Pump();
+            var newModel = vm.CurrentConversation?.ModelId;
+            var emptiesC = VisibleEmpties(win);
+            Console.WriteLine($"[新建会话] 会话数 = {vm.Conversations.Count}，模型 = {newModel}（应沿用 {picked}）");
+            Console.WriteLine($"[空会话·空状态] 可见提示 {emptiesC.Count} 条：{string.Join(" ｜ ", emptiesC)}");
+            Save(win, "100-empty-conversation");
+
+            // ---------- C. 消息进来后空状态应消失 ----------
+            vm.CurrentConversation?.Messages.Add(new MessageViewModel("user", "你好"));
+            Pump();
+            var emptiesD = VisibleEmpties(win);
+            Console.WriteLine($"[有消息·空状态] 可见提示 {emptiesD.Count} 条");
+
+            var pass = autoCount == 1 && autoCurrent is not null
+                       && combo?.IsEnabled == true && combo?.Items.Count == 2 && combo?.SelectedItem is not null
+                       && emptiesA.Count == 1 && emptiesA[0].Contains("还没有消息")
+                       && countB == 0 && currentIsNull
+                       && enabledB && itemsB == AppSettings.AvailableModels.Length && selectedB is not null
+                       && emptiesB.Count == 1 && emptiesB[0].Contains("会话列表")
+                       && settings.Current.DefaultModel == picked
+                       && vm.Conversations.Count == 1 && newModel == picked
+                       && emptiesC.Count == 1 && emptiesC[0].Contains("还没有消息")
+                       && emptiesD.Count == 0;
+            Console.WriteLine(pass ? "EMPTY-STATE PASS" : "EMPTY-STATE FAIL");
+
+            win.Close();
+        }
+        finally
+        {
+            RestoreConversations(conversationsBackup);
+            // 原本就没有会话文件：把冷启动自动生成的这份清掉，恢复成「文件不存在」
+            if (conversationsBackup is null && File.Exists(StoragePaths.ConversationsPath))
+            {
+                File.Delete(StoragePaths.ConversationsPath);
+                Console.WriteLine("conversations.json 已清理（原始状态：不存在）");
+            }
+            RestoreFile(StoragePaths.ConfigPath, configBackup);
+        }
+    }
+
+    /// <summary>取出当前可见的空状态提示文案（用于判断是否重叠显示）。</summary>
+    private static List<string> VisibleEmpties(Window window)
+        => Descendants(window).OfType<HandyControl.Controls.Empty>()
+            .Where(e => e.IsVisible)
+            .Select(e => e.GetType().GetProperty("Description")?.GetValue(e) as string ?? "?")
+            .ToList();
 
     /// <summary>在模态对话框弹出后于其内部执行动作（点击按钮，可选先截图）。</summary>
     private static void QueueModalAction(Window owner, string buttonContent, Action<ConfirmDialog>? before)

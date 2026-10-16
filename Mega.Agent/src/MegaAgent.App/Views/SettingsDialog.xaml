@@ -13,7 +13,7 @@
         <StackPanel Margin="6,4,6,6">
             <TextBlock Text="模型设置" FontSize="16" FontWeight="Bold"
                        Foreground="{DynamicResource PrimaryTextBrush}" />
-            <TextBlock Text="配置保存在 %APPDATA%\MegaAgent\config.json"
+            <TextBlock Text="配置保存在 .\MegaAgent\config.json"
                        Margin="0,6,0,0" Style="{StaticResource HintText}" TextWrapping="Wrap" />
 
             <!-- API Key（必填） -->
