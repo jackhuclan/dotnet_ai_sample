@@ -671,6 +671,22 @@ internal static class ProbeProgram
             var listBox = Descendants(win).OfType<ListBox>().FirstOrDefault();
             if (listBox is null) { Console.WriteLine("未找到会话列表"); win.Close(); return; }
 
+            // ---- 会话项副标题应显示日期，而不是模型名 ----
+            var shownDates = new List<string>();
+            var dateOk = vm.Conversations.Count > 0;
+            foreach (var conv in vm.Conversations)
+            {
+                if (listBox.ItemContainerGenerator.ContainerFromItem(conv) is not ListBoxItem item) continue;
+                var texts = Descendants(item).OfType<TextBlock>().Select(t => t.Text).ToList();
+                var hasDate = texts.Contains(conv.DisplayDate);
+                var hasModelName = texts.Any(t => t.StartsWith("deepseek"));
+                shownDates.Add($"{conv.Title} → \"{conv.DisplayDate}\"");
+                Console.WriteLine($"[会话项副标题] 标题=\"{conv.Title}\" 显示=\"{conv.DisplayDate}\" " +
+                                  $"（全量文本：{string.Join(" | ", texts)}）命中日期={hasDate} 仍显示模型名={hasModelName}");
+                dateOk &= hasDate && !hasModelName;
+            }
+            Console.WriteLine($"[会话项副标题] 共 {shownDates.Count} 条，日期清单：{string.Join("；", shownDates)}");
+
             var moreButtons = Descendants(listBox).OfType<Button>()
                 .Where(b => (b.ToolTip as string) == "更多操作").ToList();
             Console.WriteLine($"「…」按钮数量 = {moreButtons.Count}（会话 {total} 条）");
@@ -757,6 +773,7 @@ internal static class ProbeProgram
             Save(win, "95-after-delete");
 
             var pass = moreButtons.Count == total
+                       && dateOk
                        && renamed && persisted
                        && cancelKept && afterCancel == total
                        && confirmed && afterConfirm == total - 1;

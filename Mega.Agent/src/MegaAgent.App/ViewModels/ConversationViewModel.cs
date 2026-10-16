@@ -31,6 +31,27 @@ public partial class ConversationViewModel : ObservableObject
     [ObservableProperty]
     private string _renameDraft = string.Empty;
 
+    /// <summary>
+    /// 列表副标题显示的日期：今天 / 昨天显示相对时间（含时分），同年显示「M月d日」，
+    /// 跨年显示「yyyy年M月d日」。取自会话创建时间（CreatedAt）。
+    /// </summary>
+    public string DisplayDate => FormatDate(Model.CreatedAt);
+
+    /// <summary>完整时间，供列表项悬浮提示使用。</summary>
+    public string FullDate => Model.CreatedAt.ToString("yyyy-MM-dd HH:mm");
+
+    private static string FormatDate(DateTime time)
+    {
+        var today = DateTime.Today;
+        if (time.Date == today)
+            return $"今天 {time:HH:mm}";
+        if (time.Date == today.AddDays(-1))
+            return $"昨天 {time:HH:mm}";
+        if (time.Year == today.Year)
+            return $"{time.Month}月{time.Day}日";
+        return $"{time.Year}年{time.Month}月{time.Day}日";
+    }
+
     public ConversationViewModel(Conversation model)
     {
         Model = model;

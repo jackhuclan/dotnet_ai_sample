@@ -75,7 +75,8 @@
                     <TextBlock Text="{Binding Title}"
                                TextTrimming="CharacterEllipsis"
                                Foreground="{DynamicResource PrimaryTextBrush}" />
-                    <TextBlock Text="{Binding ModelId}"
+                    <TextBlock Text="{Binding DisplayDate}"
+                               ToolTip="{Binding FullDate}"
                                Margin="0,2,0,0"
                                FontSize="11"
                                Foreground="{DynamicResource SecondaryTextBrush}" />
