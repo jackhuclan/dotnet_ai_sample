@@ -36,7 +36,8 @@ public partial class SkillsDialog : Window
     {
         if (SkillList.SelectedItem is not Skill selected)
         {
-            MessageBox.Show("请先选择一个技能。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            HandyControl.Controls.MessageBox.Show("请先选择一个技能。", "提示",
+                MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -53,11 +54,12 @@ public partial class SkillsDialog : Window
     {
         if (SkillList.SelectedItem is not Skill selected)
         {
-            MessageBox.Show("请先选择一个技能。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            HandyControl.Controls.MessageBox.Show("请先选择一个技能。", "提示",
+                MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
-        if (MessageBox.Show($"确定删除技能「{selected.Name}」吗？", "确认删除",
+        if (HandyControl.Controls.MessageBox.Show($"确定删除技能「{selected.Name}」吗？", "确认删除",
                 MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             return;
 

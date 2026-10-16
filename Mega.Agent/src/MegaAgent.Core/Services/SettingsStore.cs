@@ -28,8 +28,16 @@ public class SettingsStore
             {
                 ApiKey = "sk-bdb787f4dae940e39b4f20ed8d045ad0",
                 Endpoint = AppSettings.DefaultEndpoint,
-                DefaultModel = "deepseek-chat",
+                DefaultModel = AppSettings.AvailableModels[0],
             };
+            Save();
+            return;
+        }
+
+        // 历史配置里的模型名可能已不在可选列表中，回落到第一个可用模型
+        if (!AppSettings.AvailableModels.Contains(Current.DefaultModel))
+        {
+            Current.DefaultModel = AppSettings.AvailableModels[0];
             Save();
         }
     }

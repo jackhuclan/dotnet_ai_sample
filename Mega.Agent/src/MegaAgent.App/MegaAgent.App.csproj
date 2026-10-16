@@ -13,6 +13,8 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="HandyControl" Version="3.6.0-rc3" />
+    <PackageReference Include="MdXaml" Version="2.0.0-pre202603081301" />
   </ItemGroup>
 
   <ItemGroup>

@@ -7,13 +7,13 @@ public class AppSettings
 {
     public const string DefaultEndpoint = "https://api.deepseek.com/v1";
 
-    public static readonly string[] AvailableModels = ["deepseek-chat", "deepseek-reasoner"];
+    public static readonly string[] AvailableModels = ["deepseek-flash", "deepseek-v4-pro"];
 
     public string ApiKey { get; set; } = string.Empty;
 
     public string Endpoint { get; set; } = DefaultEndpoint;
 
-    public string DefaultModel { get; set; } = "deepseek-chat";
+    public string DefaultModel { get; set; } = "deepseek-flash";
 
     [JsonIgnore]
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ApiKey);

@@ -1,52 +1,52 @@
 <Window x:Class="MegaAgent.App.SkillEditorDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
         Title="编辑技能"
-        Width="560" Height="520"
+        Width="660" Height="560"
+        MinWidth="520" MinHeight="440"
         WindowStartupLocation="CenterOwner"
-        FontFamily="Microsoft YaHei UI" FontSize="13"
-        Background="{StaticResource Brush.Window}">
-    <Grid Margin="22,18,22,18">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-
-        <TextBlock Grid.Row="0" Text="技能名称" Style="{StaticResource FormLabel}" Margin="0,0,0,6" />
-        <TextBox Grid.Row="1" x:Name="NameBox" Style="{StaticResource FormInput}" />
-
-        <Grid Grid.Row="2">
+        FontFamily="Microsoft YaHei UI" FontSize="13.5"
+        Background="{DynamicResource BackgroundBrush}">
+    <hc:Card Margin="18" Padding="4">
+        <Grid Margin="6,4,6,6">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Text="技能描述" Style="{StaticResource FormLabel}" />
-            <TextBox Grid.Row="1" x:Name="DescBox" Style="{StaticResource FormInput}" />
-        </Grid>
-
-        <Grid Grid.Row="3" Margin="0,6,0,0">
-            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Text="系统提示词（System Prompt）" Style="{StaticResource FormLabel}" />
-            <TextBox Grid.Row="1"
-                     x:Name="PromptBox"
-                     Style="{StaticResource FormInput}"
-                     AcceptsReturn="True"
-                     TextWrapping="Wrap"
-                     VerticalContentAlignment="Top"
-                     VerticalScrollBarVisibility="Auto" />
-        </Grid>
 
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-            <Button Content="保存" Margin="0,0,8,0"
-                    Click="SaveButton_Click" Style="{StaticResource PrimaryButton}" />
-            <Button Content="取消"
-                    Click="CancelButton_Click" Style="{StaticResource SecondaryButton}" />
-        </StackPanel>
-    </Grid>
+            <TextBlock Grid.Row="0" Text="技能名称" Style="{StaticResource FormLabel}" Margin="0,0,0,6" />
+            <hc:TextBox Grid.Row="1" x:Name="NameBox" hc:InfoElement.Placeholder="例如：翻译助手" />
+
+            <TextBlock Grid.Row="2" Text="技能描述" Style="{StaticResource FormLabel}" />
+            <hc:TextBox Grid.Row="3" x:Name="DescBox" hc:InfoElement.Placeholder="一句话说明技能用途" />
+
+            <Grid Grid.Row="4" Margin="0,4,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="系统提示词（System Prompt）" Style="{StaticResource FormLabel}" />
+                <hc:TextBox Grid.Row="1"
+                            x:Name="PromptBox"
+                            AcceptsReturn="True"
+                            TextWrapping="Wrap"
+                            VerticalScrollBarVisibility="Auto"
+                            hc:InfoElement.Placeholder="作为 system prompt 注入模型，例如：你是一名专业翻译……" />
+            </Grid>
+
+            <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+                <Button Content="保存" MinWidth="76" Margin="0,0,8,0"
+                        Style="{StaticResource ButtonPrimary}"
+                        Click="SaveButton_Click" />
+                <Button Content="取消"
+                        Style="{StaticResource ButtonDefault}"
+                        Click="CancelButton_Click" />
+            </StackPanel>
+        </Grid>
+    </hc:Card>
 </Window>

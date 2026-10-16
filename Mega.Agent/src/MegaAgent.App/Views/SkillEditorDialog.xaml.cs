@@ -20,7 +20,8 @@ public partial class SkillEditorDialog : Window
     {
         if (string.IsNullOrWhiteSpace(NameBox.Text))
         {
-            MessageBox.Show("技能名称不能为空。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            HandyControl.Controls.MessageBox.Show("技能名称不能为空。", "提示",
+                MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 

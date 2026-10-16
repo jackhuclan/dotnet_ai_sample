@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -8,7 +9,7 @@ using MegaAgent.Core.Services;
 
 namespace MegaAgent.App.ViewModels;
 
-/// <summary>主窗口 ViewModel：会话列表、技能选择、发送/停止、设置入口。</summary>
+/// <summary>主窗口 ViewModel：会话列表、斜杠技能选择、发送/停止、设置入口。</summary>
 public partial class MainViewModel : ObservableObject
 {
     private readonly SettingsStore _settingsStore;
@@ -19,12 +20,14 @@ public partial class MainViewModel : ObservableObject
 
     public ObservableCollection<ConversationViewModel> Conversations { get; } = new();
 
+    /// <summary>技能下拉/斜杠菜单的选项集合（含“不使用技能”）。</summary>
     public ObservableCollection<SkillOption> SkillOptions { get; } = new();
 
     public string[] AvailableModels => AppSettings.AvailableModels;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasCurrentConversation))]
+    [NotifyCanExecuteChangedFor(nameof(SendMessageCommand))]
     private ConversationViewModel? _currentConversation;
 
     [ObservableProperty]
@@ -38,18 +41,25 @@ public partial class MainViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(SendMessageCommand))]
     private bool _isBusy;
 
+    // ---------- 斜杠技能浮层 ----------
+    public ObservableCollection<SkillPopupItem> SkillPopupItems { get; } = new();
+
+    [ObservableProperty]
+    private bool _isSkillPopupOpen;
+
+    [ObservableProperty]
+    private int _skillPopupIndex = -1;
+
     public bool HasCurrentConversation => CurrentConversation is not null;
+
+    /// <summary>当前会话是否已挂载技能（用于输入区 chip 显示）。</summary>
+    public bool HasActiveSkill => SelectedSkillOption?.Id is not null;
+
+    public string ActiveSkillName => SelectedSkillOption?.Id is null ? string.Empty : SelectedSkillOption.DisplayName;
 
     /// <summary>左下角用户区显示的 API Key 状态文案。</summary>
     [ObservableProperty]
     private string _apiKeyStatus = string.Empty;
-
-    public void RefreshApiKeyStatus()
-    {
-        ApiKeyStatus = _settingsStore.Current.IsConfigured
-            ? "API Key 已配置"
-            : "未配置 API Key（点击设置）";
-    }
 
     public MainViewModel(
         SettingsStore settingsStore,
@@ -62,19 +72,36 @@ public partial class MainViewModel : ObservableObject
         _conversationStore = conversationStore;
         _agentService = agentService;
 
+        // 历史会话的模型名若不在当前可选列表中，回落到默认模型
+        var migrated = false;
         foreach (var c in _conversationStore.Conversations)
+        {
+            if (!AppSettings.AvailableModels.Contains(c.ModelId))
+            {
+                c.ModelId = _settingsStore.Current.DefaultModel;
+                migrated = true;
+            }
             Conversations.Add(new ConversationViewModel(c));
+        }
+        if (migrated)
+            _conversationStore.Save();
 
         RebuildSkillOptions();
         RefreshApiKeyStatus();
         CurrentConversation = Conversations.FirstOrDefault();
     }
 
+    public void RefreshApiKeyStatus()
+    {
+        ApiKeyStatus = _settingsStore.Current.IsConfigured
+            ? "API Key 已配置"
+            : "未配置 API Key";
+    }
+
     partial void OnCurrentConversationChanged(ConversationViewModel? value)
     {
-        // 切换会话时同步技能下拉框
         if (value is not null)
-            SelectedSkillOption = SkillOptions.FirstOrDefault(o => o.Id == value.SkillId) ?? SkillOptions[0];
+            SelectedSkillOption = SkillOptions.FirstOrDefault(o => o.Id == value.SkillId) ?? SafeDefaultSkillOption();
         SendMessageCommand.NotifyCanExecuteChanged();
     }
 
@@ -85,16 +112,108 @@ public partial class MainViewModel : ObservableObject
             CurrentConversation.SkillId = value.Id;
             SaveConversations();
         }
+        OnPropertyChanged(nameof(HasActiveSkill));
+        OnPropertyChanged(nameof(ActiveSkillName));
     }
+
+    partial void OnDraftInputChanged(string value) => UpdateSkillPopup(value);
+
+    private SkillOption? SafeDefaultSkillOption() => SkillOptions.FirstOrDefault();
 
     public void RebuildSkillOptions()
     {
-        var keepId = SelectedSkillOption?.Id;
         SkillOptions.Clear();
         SkillOptions.Add(new SkillOption(null, "不使用技能"));
         foreach (var s in _skillStore.Skills)
             SkillOptions.Add(new SkillOption(s.Id, s.Name));
-        SelectedSkillOption = SkillOptions.FirstOrDefault(o => o.Id == keepId) ?? SkillOptions[0];
+        SelectedSkillOption = SkillOptions.FirstOrDefault()
+                              ?? new SkillOption(null, "不使用技能");
+        OnPropertyChanged(nameof(HasActiveSkill));
+        OnPropertyChanged(nameof(ActiveSkillName));
+    }
+
+    // ---------------- 斜杠(/)技能选择 ----------------
+
+    /// <summary>输入以 / 开头时打开技能浮层，并按已输入关键字过滤。</summary>
+    private void UpdateSkillPopup(string value)
+    {
+        if (string.IsNullOrEmpty(value) || !value.TrimStart().StartsWith('/'))
+        {
+            CloseSkillPopup();
+            return;
+        }
+
+        var query = value.TrimStart()[1..].Trim();
+        var matches = _skillStore.Skills
+            .Where(s => query.Length == 0
+                        || s.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+                        || s.Description.Contains(query, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (matches.Count == 0)
+        {
+            CloseSkillPopup();
+            return;
+        }
+
+        SkillPopupItems.Clear();
+        foreach (var s in matches)
+            SkillPopupItems.Add(new SkillPopupItem(s));
+
+        SetSkillPopupIndex(0);
+        IsSkillPopupOpen = true;
+    }
+
+    private void SetSkillPopupIndex(int index)
+    {
+        if (SkillPopupItems.Count == 0) return;
+        index = Math.Clamp(index, 0, SkillPopupItems.Count - 1);
+        for (var i = 0; i < SkillPopupItems.Count; i++)
+            SkillPopupItems[i].IsHighlighted = i == index;
+        SkillPopupIndex = index;
+    }
+
+    /// <summary>上下键移动高亮项。</summary>
+    public void MoveSkillSelection(int delta)
+    {
+        if (!IsSkillPopupOpen || SkillPopupItems.Count == 0) return;
+        var next = SkillPopupIndex + delta;
+        if (next < 0) next = SkillPopupItems.Count - 1;
+        if (next >= SkillPopupItems.Count) next = 0;
+        SetSkillPopupIndex(next);
+    }
+
+    /// <summary>确认选中当前高亮技能，并清掉输入框中的 / 前缀。</summary>
+    public void CommitSkillSelection()
+    {
+        if (!IsSkillPopupOpen || SkillPopupIndex < 0 || SkillPopupIndex >= SkillPopupItems.Count) return;
+        ApplySkill(SkillPopupItems[SkillPopupIndex].Skill.Id);
+        DraftInput = string.Empty;
+        CloseSkillPopup();
+    }
+
+    [RelayCommand]
+    private void SelectSkillFromPopup(SkillPopupItem? item)
+    {
+        if (item is null) return;
+        ApplySkill(item.Skill.Id);
+        DraftInput = string.Empty;
+        CloseSkillPopup();
+    }
+
+    private void ApplySkill(string? skillId)
+    {
+        SelectedSkillOption = SkillOptions.FirstOrDefault(o => o.Id == skillId) ?? SafeDefaultSkillOption();
+    }
+
+    [RelayCommand]
+    private void ClearSkill() => ApplySkill(null);
+
+    public void CloseSkillPopup()
+    {
+        IsSkillPopupOpen = false;
+        SkillPopupIndex = -1;
+        SkillPopupItems.Clear();
     }
 
     // ---------------- 会话管理 ----------------
@@ -104,7 +223,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (!_settingsStore.Current.IsConfigured)
         {
-            MessageBox.Show("尚未配置 API Key，请先点击左下角用户头像进行设置。", "提示",
+            HandyControl.Controls.MessageBox.Show("尚未配置 API Key，请先点击左下角头像进行设置。", "提示",
                 MessageBoxButton.OK, MessageBoxImage.Information);
             WeakReferenceMessenger.Default.Send(new OpenSettingsMessage());
             return;
@@ -128,12 +247,11 @@ public partial class MainViewModel : ObservableObject
     private void DeleteConversation(ConversationViewModel? conv)
     {
         if (conv is null) return;
-        if (MessageBox.Show($"确定删除对话「{conv.Title}」吗？", "确认删除",
+        if (HandyControl.Controls.MessageBox.Show($"确定删除对话「{conv.Title}」吗？", "确认删除",
                 MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             return;
 
-        var model = conv.Model;
-        _conversationStore.Conversations.Remove(model);
+        _conversationStore.Conversations.Remove(conv.Model);
         Conversations.Remove(conv);
         if (CurrentConversation == conv)
             CurrentConversation = Conversations.FirstOrDefault();
@@ -162,6 +280,7 @@ public partial class MainViewModel : ObservableObject
 
         var text = DraftInput.Trim();
         DraftInput = string.Empty;
+        CloseSkillPopup();
 
         // 技能提示词
         string? skillPrompt = null;
@@ -172,7 +291,6 @@ public partial class MainViewModel : ObservableObject
         // 用户消息
         conv.Messages.Add(new MessageViewModel("user", text));
 
-        // 首条消息设置标题
         if (conv.Model.Messages.Count == 0)
             conv.Title = text.Length > 20 ? text[..20] + "…" : text;
         conv.SyncToModel();
@@ -183,27 +301,38 @@ public partial class MainViewModel : ObservableObject
 
         IsBusy = true;
         _cts = new CancellationTokenSource();
+        var throttle = Stopwatch.StartNew();
         try
         {
             await foreach (var chunk in _agentService.StreamReplyAsync(conv.Model, text, skillPrompt, _cts.Token))
             {
-                placeholder.Content += chunk;
+                placeholder.AppendChunk(chunk);
+                // 节流刷新 Markdown 渲染，避免逐字重排造成卡顿
+                if (throttle.ElapsedMilliseconds > 200)
+                {
+                    placeholder.FlushRender();
+                    throttle.Restart();
+                }
                 WeakReferenceMessenger.Default.Send(new ScrollToBottomMessage());
             }
             if (string.IsNullOrEmpty(placeholder.Content))
-                placeholder.Content = "（模型未返回内容）";
+                placeholder.SetContent("（模型未返回内容）");
+            else
+                placeholder.FlushRender();
         }
         catch (OperationCanceledException)
         {
-            placeholder.Content = string.IsNullOrEmpty(placeholder.Content)
+            placeholder.AppendChunk(string.IsNullOrEmpty(placeholder.Content)
                 ? "（已停止生成）"
-                : placeholder.Content + "\n\n（已停止生成）";
+                : "\n\n（已停止生成）");
+            placeholder.FlushRender();
         }
         catch (Exception ex)
         {
-            placeholder.Content = string.IsNullOrEmpty(placeholder.Content)
+            placeholder.AppendChunk(string.IsNullOrEmpty(placeholder.Content)
                 ? $"⚠ 调用失败：{ex.Message}"
-                : placeholder.Content + $"\n\n⚠ 调用中断：{ex.Message}";
+                : $"\n\n⚠ 调用中断：{ex.Message}");
+            placeholder.FlushRender();
         }
         finally
         {
@@ -217,12 +346,9 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void Stop()
-    {
-        _cts?.Cancel();
-    }
+    private void Stop() => _cts?.Cancel();
 
-    // ---------------- 技能 / 设置入口 ----------------
+    // ---------------- 设置 / 技能入口（由浮层菜单调用） ----------------
 
     [RelayCommand]
     private void OpenSettings() => WeakReferenceMessenger.Default.Send(new OpenSettingsMessage());
