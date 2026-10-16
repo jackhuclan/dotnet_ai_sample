@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MegaAgent.App/MegaAgent.App.csproj" />
+    <Project Path="src/MegaAgent.Core/MegaAgent.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MegaAgent.SmokeTest/MegaAgent.SmokeTest.csproj" />
+  </Folder>
+</Solution>
