@@ -1,10 +1,11 @@
 using System.Text.Json;
+using MegaAgent.Core.Abstractions;
 using MegaAgent.Core.Models;
 
 namespace MegaAgent.Core.Services;
 
 /// <summary>技能库持久化服务。首次运行时预置两个示例技能。</summary>
-public class SkillStore
+public class SkillStore : ISkillStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

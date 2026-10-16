@@ -11,14 +11,19 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using MegaAgent.App;
 using MegaAgent.App.ViewModels;
+using MegaAgent.Core.Abstractions;
 using MegaAgent.Core.Models;
 using MegaAgent.Core.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace MegaAgent.UiProbe;
 
 /// <summary>
 /// 离屏 UI 探针：不依赖鼠标/键盘模拟，直接实例化窗口与 ViewModel、驱动命令、把结果渲染成 PNG。
-/// 覆盖：必填校验（红框 + 必填提示 + 保存按钮禁用）、对话框 MVVM 绑定、消息区滚轮滚动。
+/// 全部窗口/ViewModel 都从 DI 容器解析（与真实应用共用 AddMegaAgentServices 注册），
+/// 覆盖：DI 依赖图、必填校验、MVVM 绑定、消息区滚轮滚动、Enter 发送、会话菜单。
 /// </summary>
 internal static class ProbeProgram
 {
@@ -37,6 +42,7 @@ internal static class ProbeProgram
 
         DumpPasswordBoxInfo();
 
+        ProbeServiceGraph();
         ProbeSettingsDialog();
         ProbeSkillEditorDialog();
         ProbeSkillsDialog();
@@ -47,6 +53,84 @@ internal static class ProbeProgram
 
         Console.WriteLine("probe done");
     }
+
+    // ---------------- DI：容器构建与依赖图校验 ----------------
+
+    /// <summary>
+    /// 用与应用启动完全相同的注册方式构建容器，并加载持久化数据。
+    /// 每个探针用例各建一份，保证用例之间互不污染。
+    /// </summary>
+    private static IHost CreateHost()
+    {
+        var builder = Host.CreateApplicationBuilder();
+        builder.Logging.ClearProviders();
+        builder.Logging.AddDebug();
+        builder.Services.AddMegaAgentServices();
+
+        var host = builder.Build();
+        host.Services.GetRequiredService<IStorageInitializer>().Initialize();
+        return host;
+    }
+
+    /// <summary>
+    /// 与 <see cref="DialogService.ShowSkillEditor"/> 完全相同的构造方式：
+    /// 容器依赖（IServiceCollection）+ 运行期参数（Skill）用 ActivatorUtilities 组合。
+    /// </summary>
+    private static SkillEditorDialog CreateSkillEditor(IServiceProvider sp, Skill skill)
+    {
+        var viewModel = ActivatorUtilities.CreateInstance<SkillEditorDialogViewModel>(sp, skill);
+        return ActivatorUtilities.CreateInstance<SkillEditorDialog>(sp, viewModel);
+    }
+
+    /// <summary>校验四个核心服务都按接口注册，且解析出的实现类型正确。</summary>
+    private static void ProbeServiceGraph()
+    {
+        using var host = CreateHost();
+        var sp = host.Services;
+
+        var settings = sp.GetRequiredService<ISettingsStore>();
+        var skills = sp.GetRequiredService<ISkillStore>();
+        var conversations = sp.GetRequiredService<IConversationStore>();
+        var agent = sp.GetRequiredService<IAgentService>();
+        var dialogs = sp.GetRequiredService<IDialogService>();
+
+        Console.WriteLine($"[di] ISettingsStore      -> {settings.GetType().Name}");
+        Console.WriteLine($"[di] ISkillStore         -> {skills.GetType().Name}");
+        Console.WriteLine($"[di] IConversationStore  -> {conversations.GetType().Name}");
+        Console.WriteLine($"[di] IAgentService       -> {agent.GetType().Name}");
+        Console.WriteLine($"[di] IDialogService      -> {dialogs.GetType().Name}");
+
+        // 单例：同一接口两次解析必须是同一实例
+        var singleton = ReferenceEquals(settings, sp.GetRequiredService<ISettingsStore>())
+                        && ReferenceEquals(skills, sp.GetRequiredService<ISkillStore>())
+                        && ReferenceEquals(conversations, sp.GetRequiredService<IConversationStore>())
+                        && ReferenceEquals(agent, sp.GetRequiredService<IAgentService>());
+
+        // 启动期已完成加载（Initialize 被调用过）
+        Console.WriteLine($"[di] 已加载：技能 {skills.Skills.Count} 个，会话 {conversations.Conversations.Count} 条，" +
+                          $"模型 {settings.Current.DefaultModel}");
+
+        // 主窗口由容器解析：ViewModel 自动注入，DataContext 已绑定
+        var window = sp.GetRequiredService<MainWindow>();
+        var viewModelInjected = window.DataContext is MainViewModel;
+
+        // 对话框 ViewModel 的依赖注入（含运行期参数 Skill 的 ActivatorUtilities 组合）
+        var editorVm = ActivatorUtilities.CreateInstance<SkillEditorDialogViewModel>(sp, new Skill());
+        var editorDialog = sp.GetRequiredService<SettingsDialog>();
+        var injectedDialogVms = editorDialog.DataContext is SettingsDialogViewModel
+                                && editorVm is not null;
+
+        Console.WriteLine($"容器解析主窗口：DataContext 注入={viewModelInjected}；对话框 ViewModel 注入={injectedDialogVms}");
+
+        var pass = settings is SettingsStore && skills is SkillStore && conversations is ConversationStore
+                   && agent is AgentService && dialogs is DialogService
+                   && singleton && viewModelInjected && injectedDialogVms;
+        Console.WriteLine(pass ? "DI-WIRING PASS" : "DI-WIRING FAIL");
+
+        window.Close();
+        if (editorDialog.IsVisible) editorDialog.Close();
+    }
+
 
     // ---------------- 诊断：hc:PasswordBox.Password 是否支持双向绑定 ----------------
 
@@ -66,13 +150,18 @@ internal static class ProbeProgram
     private static void ProbeSettingsDialog()
     {
         var configBackup = BackupFile(StoragePaths.ConfigPath);
+        using var host = CreateHost();
+        var sp = host.Services;
 
         try
         {
-            var store = new SettingsStore();
-            store.Load();
+            // 窗口与 ViewModel 全部由容器解析（依赖 ISettingsStore + IAgentService）
+            var store = sp.GetRequiredService<ISettingsStore>();
 
-            var dlg = new SettingsDialog(store) { Left = -4000, Top = -4000, ShowActivated = false };
+            var dlg = sp.GetRequiredService<SettingsDialog>();
+            dlg.Left = -4000;
+            dlg.Top = -4000;
+            dlg.ShowActivated = false;
             dlg.Show();
             Pump();
 
@@ -147,8 +236,12 @@ internal static class ProbeProgram
 
     private static void ProbeSkillEditorDialog()
     {
+        using var host = CreateHost();
         var skill = new Skill();
-        var editor = new SkillEditorDialog(skill) { Left = -4000, Top = -4000, ShowActivated = false };
+        var editor = CreateSkillEditor(host.Services, skill);
+        editor.Left = -4000;
+        editor.Top = -4000;
+        editor.ShowActivated = false;
         editor.Show();
         Pump();
 
@@ -201,13 +294,17 @@ internal static class ProbeProgram
     private static void ProbeSkillsDialog()
     {
         var skillsBackup = BackupFile(StoragePaths.SkillsPath);
+        using var host = CreateHost();
+        var sp = host.Services;
 
         try
         {
-            var store = new SkillStore();
-            store.Load();
+            var store = sp.GetRequiredService<ISkillStore>();
 
-            var dlg = new SkillsDialog(store) { Left = -4000, Top = -4000, ShowActivated = false };
+            var dlg = sp.GetRequiredService<SkillsDialog>();
+            dlg.Left = -4000;
+            dlg.Top = -4000;
+            dlg.ShowActivated = false;
             dlg.Show();
             Pump();
 
@@ -277,19 +374,16 @@ internal static class ProbeProgram
     private static void ProbeChatScroll()
     {
         var backup = BackupConversations();
-
-        var settings = new SettingsStore();
-        settings.Load();
-        var skills = new SkillStore();
-        skills.Load();
-        var conversations = new ConversationStore();
-        conversations.Load();
-        var agent = new AgentService(settings);
+        using var host = CreateHost();
+        var sp = host.Services;
 
         try
         {
-            var vm = new MainViewModel(settings, skills, conversations, agent);
-            var win = new MainWindow { DataContext = vm, Left = -4000, Top = -4000, ShowActivated = false };
+            var vm = sp.GetRequiredService<MainViewModel>();
+            var win = sp.GetRequiredService<MainWindow>();
+            win.Left = -4000;
+            win.Top = -4000;
+            win.ShowActivated = false;
             win.Show();
             Pump();
 
@@ -373,13 +467,8 @@ internal static class ProbeProgram
 
     private static void ProbeEnterSend()
     {
-        var settings = new SettingsStore();
-        settings.Load();
-        var skills = new SkillStore();
-        skills.Load();
-        var conversations = new ConversationStore();
-        conversations.Load();
-        var agent = new AgentService(settings);
+        using var host = CreateHost();
+        var sp = host.Services;
 
         // 探针会真实写入会话文件，结束后还原
         var convPath = StoragePaths.ConversationsPath;
@@ -388,8 +477,11 @@ internal static class ProbeProgram
 
         try
         {
-            var vm = new MainViewModel(settings, skills, conversations, agent);
-            var win = new MainWindow { DataContext = vm, Left = -4000, Top = -4000, ShowActivated = false };
+            var vm = sp.GetRequiredService<MainViewModel>();
+            var win = sp.GetRequiredService<MainWindow>();
+            win.Left = -4000;
+            win.Top = -4000;
+            win.ShowActivated = false;
             win.Show();
             Pump();
 
@@ -472,8 +564,12 @@ internal static class ProbeProgram
 
     private static void ProbeAvatarMenu()
     {
-        // 不设置 DataContext：仅验证静态布局（绑定为空不影响文案渲染）
-        var win = new MainWindow { Left = -4000, Top = -4000, ShowActivated = false };
+        // 窗口仍由容器解析（DataContext 为真实 MainViewModel），仅验证静态布局与文案
+        using var host = CreateHost();
+        var win = host.Services.GetRequiredService<MainWindow>();
+        win.Left = -4000;
+        win.Top = -4000;
+        win.ShowActivated = false;
         win.Show();
         Pump();
 
@@ -497,18 +593,16 @@ internal static class ProbeProgram
     private static void ProbeConversationMenu()
     {
         var backup = BackupConversations();
-        var settings = new SettingsStore();
-        settings.Load();
-        var skills = new SkillStore();
-        skills.Load();
-        var conversations = new ConversationStore();
-        conversations.Load();
-        var agent = new AgentService(settings);
+        using var host = CreateHost();
+        var sp = host.Services;
 
         try
         {
-            var vm = new MainViewModel(settings, skills, conversations, agent);
-            var win = new MainWindow { DataContext = vm, Left = -4000, Top = -4000, ShowActivated = false };
+            var vm = sp.GetRequiredService<MainViewModel>();
+            var win = sp.GetRequiredService<MainWindow>();
+            win.Left = -4000;
+            win.Top = -4000;
+            win.ShowActivated = false;
             win.Show();
             Pump();
 

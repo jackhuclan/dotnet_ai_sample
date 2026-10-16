@@ -1,19 +1,19 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MegaAgent.Core.Abstractions;
 using MegaAgent.Core.Models;
-using MegaAgent.Core.Services;
 
 namespace MegaAgent.App.ViewModels;
 
 /// <summary>
 /// 「技能管理」对话框 ViewModel：技能列表、选中项与新建/编辑/删除/关闭命令。
 /// 打开编辑器、弹确认框这类窗口交互通过 <see cref="IDialogService"/> 抽象交给 View，
-/// 持久化与列表增删逻辑全部留在这里。
+/// 持久化与列表增删逻辑全部留在这里。两个依赖均由 DI 容器注入。
 /// </summary>
 public partial class SkillsDialogViewModel : ObservableObject
 {
-    private readonly SkillStore _store;
+    private readonly ISkillStore _store;
     private readonly IDialogService _dialogs;
 
     public ObservableCollection<Skill> Skills { get; } = new();
@@ -29,7 +29,7 @@ public partial class SkillsDialogViewModel : ObservableObject
     /// <summary>请求 View 关闭对话框。</summary>
     public event EventHandler? CloseRequested;
 
-    public SkillsDialogViewModel(SkillStore store, IDialogService dialogs)
+    public SkillsDialogViewModel(ISkillStore store, IDialogService dialogs)
     {
         _store = store;
         _dialogs = dialogs;

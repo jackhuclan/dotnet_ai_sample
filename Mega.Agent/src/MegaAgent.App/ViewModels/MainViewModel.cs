@@ -1,21 +1,21 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using MegaAgent.Core.Abstractions;
 using MegaAgent.Core.Models;
-using MegaAgent.Core.Services;
 
 namespace MegaAgent.App.ViewModels;
 
 /// <summary>主窗口 ViewModel：会话列表、斜杠技能选择、发送/停止、设置入口。</summary>
 public partial class MainViewModel : ObservableObject
 {
-    private readonly SettingsStore _settingsStore;
-    private readonly SkillStore _skillStore;
-    private readonly ConversationStore _conversationStore;
-    private readonly AgentService _agentService;
+    private readonly ISettingsStore _settingsStore;
+    private readonly ISkillStore _skillStore;
+    private readonly IConversationStore _conversationStore;
+    private readonly IAgentService _agentService;
+    private readonly IDialogService _dialogs;
     private CancellationTokenSource? _cts;
 
     public ObservableCollection<ConversationViewModel> Conversations { get; } = new();
@@ -62,11 +62,13 @@ public partial class MainViewModel : ObservableObject
     private string _apiKeyStatus = string.Empty;
 
     public MainViewModel(
-        SettingsStore settingsStore,
-        SkillStore skillStore,
-        ConversationStore conversationStore,
-        AgentService agentService)
+        IDialogService dialogs,
+        ISettingsStore settingsStore,
+        ISkillStore skillStore,
+        IConversationStore conversationStore,
+        IAgentService agentService)
     {
+        _dialogs = dialogs;
         _settingsStore = settingsStore;
         _skillStore = skillStore;
         _conversationStore = conversationStore;
@@ -223,9 +225,8 @@ public partial class MainViewModel : ObservableObject
     {
         if (!_settingsStore.Current.IsConfigured)
         {
-            HandyControl.Controls.MessageBox.Show("尚未配置 API Key，请先点击左下角头像进行设置。", "提示",
-                MessageBoxButton.OK, MessageBoxImage.Information);
-            WeakReferenceMessenger.Default.Send(new OpenSettingsMessage());
+            _dialogs.ShowInformation("尚未配置 API Key，请先点击右上角头像进行设置。", "提示");
+            OpenSettings();
             return;
         }
 
@@ -380,11 +381,21 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Stop() => _cts?.Cancel();
 
-    // ---------------- 设置 / 技能入口（由浮层菜单调用） ----------------
+    // ---------------- 设置 / 技能入口 ----------------
 
+    /// <summary>打开「模型设置」并刷新 Key 状态（对话框交互经 IDialogService 抽象）。</summary>
     [RelayCommand]
-    private void OpenSettings() => WeakReferenceMessenger.Default.Send(new OpenSettingsMessage());
+    private void OpenSettings()
+    {
+        _dialogs.ShowSettings();
+        RefreshApiKeyStatus();
+    }
 
+    /// <summary>打开「技能管理」并刷新技能选项。</summary>
     [RelayCommand]
-    private void ManageSkills() => WeakReferenceMessenger.Default.Send(new OpenSkillsMessage());
+    private void ManageSkills()
+    {
+        _dialogs.ShowSkills();
+        RebuildSkillOptions();
+    }
 }

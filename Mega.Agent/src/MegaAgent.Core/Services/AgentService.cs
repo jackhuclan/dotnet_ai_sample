@@ -2,6 +2,7 @@ using System.ClientModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Microsoft.Agents.AI;
+using MegaAgent.Core.Abstractions;
 using MegaAgent.Core.Models;
 using Microsoft.Extensions.AI;
 using OpenAI;
@@ -13,11 +14,11 @@ namespace MegaAgent.Core.Services;
 /// 底层使用 OpenAI SDK 指向 DeepSeek 的 OpenAI 兼容端点，
 /// 通过 MAF 的 ChatClientAgent 获得会话（AgentSession）管理与后续扩展能力。
 /// </summary>
-public class AgentService
+public class AgentService : IAgentService
 {
-    private readonly SettingsStore _settings;
+    private readonly ISettingsStore _settings;
 
-    public AgentService(SettingsStore settings)
+    public AgentService(ISettingsStore settings)
     {
         _settings = settings;
     }
@@ -38,14 +39,9 @@ public class AgentService
     {
         var cfg = _settings.Current;
         if (!cfg.IsConfigured)
-            throw new InvalidOperationException("尚未配置 API Key，请点击左下角用户头像进行设置。");
+            throw new InvalidOperationException("尚未配置 API Key，请点击左上角用户头像进行设置。");
 
-        // OpenAI SDK + 自定义 Endpoint => DeepSeek OpenAI 兼容端点
-        var openAiClient = new OpenAIClient(
-            new ApiKeyCredential(cfg.ApiKey),
-            new OpenAIClientOptions { Endpoint = new Uri(cfg.Endpoint) });
-
-        IChatClient chatClient = openAiClient.GetChatClient(conversation.ModelId).AsIChatClient();
+        var chatClient = CreateChatClient(cfg.ApiKey, cfg.Endpoint, conversation.ModelId);
 
         // MAF：ChatClientAgent 封装 IChatClient，技能提示词经 ChatOptions.Instructions 注入
         var agentOptions = new ChatClientAgentOptions { Name = "MegaAgent" };
@@ -76,5 +72,30 @@ public class AgentService
         // 把会话序列化回存，供下轮恢复
         var serialized = await agent.SerializeSessionAsync(session);
         conversation.ThreadJson = serialized.GetRawText();
+    }
+
+    /// <summary>
+    /// 用指定参数测试连通性，返回模型回复文本；失败时抛出异常。
+    /// 供「模型设置」对话框在不落盘配置的前提下验证端点与 Key。
+    /// </summary>
+    public async Task<string> TestConnectionAsync(
+        string apiKey,
+        string endpoint,
+        string model,
+        CancellationToken ct = default)
+    {
+        var chatClient = CreateChatClient(apiKey, endpoint, model);
+        var reply = await chatClient.GetResponseAsync("ping", cancellationToken: ct);
+        return reply.Text ?? string.Empty;
+    }
+
+    /// <summary>OpenAI SDK + 自定义 Endpoint =&gt; DeepSeek OpenAI 兼容端点。</summary>
+    private static IChatClient CreateChatClient(string apiKey, string endpoint, string model)
+    {
+        var openAiClient = new OpenAIClient(
+            new ApiKeyCredential(apiKey),
+            new OpenAIClientOptions { Endpoint = new Uri(endpoint) });
+
+        return openAiClient.GetChatClient(model).AsIChatClient();
     }
 }

@@ -1,10 +1,11 @@
 using System.Text.Json;
+using MegaAgent.Core.Abstractions;
 using MegaAgent.Core.Models;
 
 namespace MegaAgent.Core.Services;
 
 /// <summary>应用配置持久化服务（config.json）。</summary>
-public class SettingsStore
+public class SettingsStore : ISettingsStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

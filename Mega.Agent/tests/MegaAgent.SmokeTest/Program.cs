@@ -1,16 +1,17 @@
+using MegaAgent.Core.Abstractions;
 using MegaAgent.Core.Models;
 using MegaAgent.Core.Services;
 
 // ============================================================
 // MegaAgent 冒烟测试
-// 使用与 WPF UI 完全相同的服务层（SettingsStore + AgentService）
+// 使用与 WPF UI 完全相同的服务层（ISettingsStore + IAgentService）
 // 真实调用 DeepSeek 流式接口，验证 "发送 -> 调用 agent -> 回复" 链路
 // ============================================================
 
 Console.WriteLine("== MegaAgent 冒烟测试 ==");
 
 // 1. 加载配置（与 WPF 应用同一份 %APPDATA%\MegaAgent\config.json）
-var settings = new SettingsStore();
+ISettingsStore settings = new SettingsStore();
 settings.Load();
 
 if (!settings.Current.IsConfigured)
@@ -27,7 +28,7 @@ var conversation = new Conversation
     Title = "冒烟测试",
 };
 
-var agentService = new AgentService(settings);
+IAgentService agentService = new AgentService(settings);
 
 // 3. 第一轮：流式调用
 Console.WriteLine("\n-- 第一轮（流式）--");

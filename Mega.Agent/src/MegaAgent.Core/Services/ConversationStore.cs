@@ -1,10 +1,11 @@
 using System.Text.Json;
+using MegaAgent.Core.Abstractions;
 using MegaAgent.Core.Models;
 
 namespace MegaAgent.Core.Services;
 
 /// <summary>基于 JSON 文件的会话持久化服务。</summary>
-public class ConversationStore
+public class ConversationStore : IConversationStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

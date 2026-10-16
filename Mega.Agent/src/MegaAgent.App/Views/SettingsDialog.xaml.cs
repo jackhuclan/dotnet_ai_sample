@@ -1,21 +1,19 @@
 using System.Windows;
-using MegaAgent.Core.Services;
 using MegaAgent.App.ViewModels;
 
 namespace MegaAgent.App;
 
 /// <summary>
 /// 模型设置对话框。业务逻辑全部在 <see cref="SettingsDialogViewModel"/>，
-/// 这里只负责构造 ViewModel、绑定 DataContext，以及响应「关闭对话框」请求。
+/// 这里只负责绑定 DataContext，以及响应「关闭对话框」请求（ViewModel 由容器注入）。
 /// </summary>
 public partial class SettingsDialog : Window
 {
-    public SettingsDialog(SettingsStore store)
+    public SettingsDialog(SettingsDialogViewModel viewModel)
     {
         InitializeComponent();
 
-        var vm = new SettingsDialogViewModel(store);
-        vm.CloseRequested += (_, result) =>
+        viewModel.CloseRequested += (_, result) =>
         {
             if (result is not null)
             {
@@ -26,6 +24,6 @@ public partial class SettingsDialog : Window
             Close();
         };
 
-        DataContext = vm;
+        DataContext = viewModel;
     }
 }

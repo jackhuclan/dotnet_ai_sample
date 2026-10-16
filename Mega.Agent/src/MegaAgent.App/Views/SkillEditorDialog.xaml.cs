@@ -1,20 +1,19 @@
 using System.Windows;
 using MegaAgent.App.ViewModels;
-using MegaAgent.Core.Models;
 
 namespace MegaAgent.App;
 
 /// <summary>
-/// 技能编辑对话框。字段、校验与保存逻辑都在 <see cref="SkillEditorDialogViewModel"/>。
+/// 技能编辑对话框。字段、校验与保存逻辑都在 <see cref="SkillEditorDialogViewModel"/>
+/// （由容器解析，运行期的 Skill 参数由 <see cref="DialogService"/> 传入）。
 /// </summary>
 public partial class SkillEditorDialog : Window
 {
-    public SkillEditorDialog(Skill skill)
+    public SkillEditorDialog(SkillEditorDialogViewModel viewModel)
     {
         InitializeComponent();
 
-        var vm = new SkillEditorDialogViewModel(skill);
-        vm.CloseRequested += (_, result) =>
+        viewModel.CloseRequested += (_, result) =>
         {
             if (result is not null)
             {
@@ -25,6 +24,6 @@ public partial class SkillEditorDialog : Window
             Close();
         };
 
-        DataContext = vm;
+        DataContext = viewModel;
     }
 }

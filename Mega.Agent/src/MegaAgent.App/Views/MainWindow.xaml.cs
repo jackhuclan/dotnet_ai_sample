@@ -18,6 +18,8 @@ public partial class MainWindow : Window
 
     private static readonly TimeSpan AnimDuration = TimeSpan.FromMilliseconds(220);
 
+    private readonly IDialogService _dialogs;
+
     private bool _sidebarOpen;
     private double _drawerWidth;
 
@@ -27,13 +29,15 @@ public partial class MainWindow : Window
     /// <summary>「…」下拉菜单的内容总宽（Card 150 + Margin 8*2）。</summary>
     private const double ConversationMenuTotalWidth = 166;
 
-    public MainWindow()
+    /// <summary>ViewModel 与对话框服务均由 DI 容器注入。</summary>
+    public MainWindow(MainViewModel viewModel, IDialogService dialogs)
     {
         InitializeComponent();
 
+        _dialogs = dialogs;
+        DataContext = viewModel;
+
         WeakReferenceMessenger.Default.Register<ScrollToBottomMessage>(this, (_, _) => ChatScrollViewer.ScrollToEnd());
-        WeakReferenceMessenger.Default.Register<OpenSettingsMessage>(this, (_, _) => ShowSettings());
-        WeakReferenceMessenger.Default.Register<OpenSkillsMessage>(this, (_, _) => ShowSkills());
 
         // 窗口固定尺寸：只需在首次布局后计算一次抽屉宽度（聊天区的 50%）
         Loaded += (_, _) =>
@@ -130,17 +134,17 @@ public partial class MainWindow : Window
         ShowSkills();
     }
 
+    /// <summary>打开「模型设置」；关闭后刷新 Key 状态。</summary>
     private void ShowSettings()
     {
-        var dialog = new SettingsDialog(App.SettingsStore) { Owner = this };
-        dialog.ShowDialog();
+        _dialogs.ShowSettings();
         Vm?.RefreshApiKeyStatus();
     }
 
+    /// <summary>打开「技能管理」；关闭后刷新技能下拉/斜杠选项。</summary>
     private void ShowSkills()
     {
-        var dialog = new SkillsDialog(App.SkillStore) { Owner = this };
-        dialog.ShowDialog();
+        _dialogs.ShowSkills();
         Vm?.RebuildSkillOptions();
     }
 
@@ -212,11 +216,7 @@ public partial class MainWindow : Window
     private void ConfirmDelete(ConversationViewModel? conv)
     {
         if (conv is null) return;
-        var dialog = new ConfirmDialog("删除会话", $"确认要删除「{conv.Title}」会话吗？", "删除")
-        {
-            Owner = this,
-        };
-        if (dialog.ShowDialog() == true)
+        if (_dialogs.Confirm($"确认要删除「{conv.Title}」会话吗？", "删除会话", "删除"))
             Vm?.DeleteConversation(conv);
     }
 

@@ -1,20 +1,19 @@
-using System.ClientModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MegaAgent.Core.Abstractions;
 using MegaAgent.Core.Models;
-using MegaAgent.Core.Services;
-using Microsoft.Extensions.AI;
-using OpenAI;
 
 namespace MegaAgent.App.ViewModels;
 
 /// <summary>
 /// 「模型设置」对话框 ViewModel：持有所需填写的配置、实时必填校验与保存/测试/取消命令。
 /// 所有状态与判断都在这里，View 只负责绑定与关闭窗口。
+/// 依赖 <see cref="ISettingsStore"/> 与 <see cref="IAgentService"/> 两个抽象，由容器注入。
 /// </summary>
 public partial class SettingsDialogViewModel : ObservableObject
 {
-    private readonly SettingsStore _store;
+    private readonly ISettingsStore _store;
+    private readonly IAgentService _agentService;
 
     public string[] AvailableModels => AppSettings.AvailableModels;
 
@@ -56,9 +55,10 @@ public partial class SettingsDialogViewModel : ObservableObject
     /// <summary>请求 View 关闭对话框，参数为 DialogResult（null 表示仅关闭）。</summary>
     public event EventHandler<bool?>? CloseRequested;
 
-    public SettingsDialogViewModel(SettingsStore store)
+    public SettingsDialogViewModel(ISettingsStore store, IAgentService agentService)
     {
         _store = store;
+        _agentService = agentService;
         _apiKey = store.Current.ApiKey ?? string.Empty;
         _endpoint = store.Current.Endpoint ?? string.Empty;
         _selectedModel = store.Current.DefaultModel is { Length: > 0 } m
@@ -88,11 +88,9 @@ public partial class SettingsDialogViewModel : ObservableObject
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            var client = new OpenAIClient(new ApiKeyCredential(ApiKey.Trim()),
-                new OpenAIClientOptions { Endpoint = new Uri(Endpoint.Trim()) });
-            IChatClient chatClient = client.GetChatClient(SelectedModel).AsIChatClient();
-            var reply = await chatClient.GetResponseAsync("ping", cancellationToken: cts.Token);
-            StatusText = $"✅ 连接成功，{SelectedModel} 回复：{Truncate(reply.Text, 60)}";
+            var reply = await _agentService.TestConnectionAsync(
+                ApiKey.Trim(), Endpoint.Trim(), SelectedModel, cts.Token);
+            StatusText = $"✅ 连接成功，{SelectedModel} 回复：{Truncate(reply, 60)}";
         }
         catch (Exception ex)
         {
