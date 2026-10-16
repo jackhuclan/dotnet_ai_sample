@@ -15,12 +15,18 @@
             <TextBlock Text="配置保存在 %APPDATA%\MegaAgent\config.json"
                        Margin="0,6,0,0" Style="{StaticResource HintText}" TextWrapping="Wrap" />
 
-            <TextBlock Text="API Key" Style="{StaticResource FormLabel}" />
+            <TextBlock Style="{StaticResource FormLabel}">
+                <Run Text="API Key" /><Run Text=" *" Foreground="{DynamicResource DangerBrush}" />
+            </TextBlock>
             <hc:PasswordBox x:Name="ApiKeyBox"
                             hc:InfoElement.Placeholder="sk-..." />
+            <TextBlock x:Name="ApiKeyError" Style="{StaticResource FieldError}" />
 
-            <TextBlock Text="接口地址（OpenAI 兼容端点）" Style="{StaticResource FormLabel}" />
+            <TextBlock Style="{StaticResource FormLabel}">
+                <Run Text="接口地址（OpenAI 兼容端点）" /><Run Text=" *" Foreground="{DynamicResource DangerBrush}" />
+            </TextBlock>
             <hc:TextBox x:Name="EndpointBox" hc:InfoElement.Placeholder="https://api.deepseek.com/v1" />
+            <TextBlock x:Name="EndpointError" Style="{StaticResource FieldError}" />
 
             <TextBlock Text="默认模型" Style="{StaticResource FormLabel}" />
             <hc:ComboBox x:Name="ModelCombo" Style="{StaticResource ComboBoxExtend}" />

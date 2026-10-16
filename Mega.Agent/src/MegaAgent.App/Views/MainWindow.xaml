@@ -48,8 +48,9 @@
                 </DataTrigger>
                 <DataTrigger Binding="{Binding IsUser}" Value="True">
                     <Setter TargetName="Bubble" Property="HorizontalAlignment" Value="Right" />
-                    <Setter TargetName="Bubble" Property="Background" Value="{DynamicResource PrimaryBrush}" />
-                    <Setter TargetName="PlainText" Property="Foreground" Value="{DynamicResource ReverseTextBrush}" />
+                    <!-- 用户消息：蓝底白字 -->
+                    <Setter TargetName="Bubble" Property="Background" Value="{StaticResource UserBubbleBackground}" />
+                    <Setter TargetName="PlainText" Property="Foreground" Value="{StaticResource UserBubbleForeground}" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -155,18 +156,33 @@
                                    Style="{StaticResource HintText}" />
                     </StackPanel>
 
+                    <!-- 用户头像（矢量绘制，非文字） -->
                     <Border x:Name="TopAvatarButton"
                             Grid.Column="3"
                             Width="30" Height="30"
-                            CornerRadius="15"
+                            Background="Transparent"
                             VerticalAlignment="Center"
-                            Background="{DynamicResource PrimaryBrush}"
                             Cursor="Hand"
                             ToolTip="用户菜单"
                             MouseLeftButtonUp="AvatarButton_Click">
-                        <TextBlock Text="我" Foreground="{DynamicResource ReverseTextBrush}"
-                                   FontSize="12" FontWeight="Bold"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Grid Width="30" Height="30">
+                            <Ellipse Stroke="{DynamicResource BorderBrush}" StrokeThickness="0.6">
+                                <Ellipse.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#7C9BF7" Offset="0" />
+                                        <GradientStop Color="#3B5BDB" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Ellipse.Fill>
+                            </Ellipse>
+                            <Viewbox Stretch="Uniform">
+                                <Canvas Width="30" Height="30">
+                                    <Ellipse Canvas.Left="10.5" Canvas.Top="6.6"
+                                             Width="9" Height="9" Fill="#FFFFFF" Opacity="0.95" />
+                                    <Path Fill="#FFFFFF" Opacity="0.95"
+                                          Data="M15,17.4 C10.3,17.4 6.7,20.3 5.9,24.5 L24.1,24.5 C23.3,20.3 19.7,17.4 15,17.4 Z" />
+                                </Canvas>
+                            </Viewbox>
+                        </Grid>
                     </Border>
                 </Grid>
             </Border>
@@ -256,7 +272,7 @@
                     <hc:TextBox Grid.Row="1"
                                 x:Name="InputBox"
                                 Text="{Binding DraftInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                hc:InfoElement.Placeholder="输入消息，输入 / 可快速选择技能"
+                                hc:InfoElement.Placeholder="今天帮你做些什么?@添加上下文，/调用技能与指令"
                                 VerticalContentAlignment="Top"
                                 Padding="6,4"
                                 AcceptsReturn="True"
@@ -265,7 +281,7 @@
                                 MaxHeight="170"
                                 VerticalScrollBarVisibility="Auto"
                                 IsEnabled="{Binding HasCurrentConversation}"
-                                KeyDown="InputBox_KeyDown" />
+                                PreviewKeyDown="InputBox_PreviewKeyDown" />
 
                     <!-- 底部工具条：模型 + 提示 + 操作 -->
                     <Grid Grid.Row="2" Margin="0,10,0,0">
@@ -283,11 +299,13 @@
                                      ToolTip="选择模型"
                                      IsEnabled="{Binding HasCurrentConversation}" />
                         <TextBlock Grid.Column="1"
-                                   Text="Enter 发送 · / 选技能"
                                    Margin="10,0,8,0"
                                    VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis"
-                                   Style="{StaticResource HintText}" />
+                                   LineHeight="16"
+                                   Style="{StaticResource HintText}">
+                            <Run Text="Enter 发送" /><LineBreak />
+                            <Run Text="Enter+Shift 输入多行信息" />
+                        </TextBlock>
                         <StackPanel Grid.Column="2" Orientation="Horizontal">
                             <Button Content="停止"
                                     Margin="0,0,8,0"
@@ -387,16 +405,40 @@
                      Padding="8"
                      Effect="{DynamicResource EffectShadow2}">
                 <StackPanel>
-                    <StackPanel Margin="6,4,6,8">
-                        <TextBlock Text="本地用户" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource PrimaryTextBrush}" />
-                        <TextBlock Text="{Binding ApiKeyStatus}" Style="{StaticResource HintText}" Margin="0,2,0,0" />
-                    </StackPanel>
+                    <Grid Margin="6,4,6,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.Column="0" Width="36" Height="36" VerticalAlignment="Center">
+                            <Ellipse Stroke="{DynamicResource BorderBrush}" StrokeThickness="0.6">
+                                <Ellipse.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#7C9BF7" Offset="0" />
+                                        <GradientStop Color="#3B5BDB" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Ellipse.Fill>
+                            </Ellipse>
+                            <Viewbox Stretch="Uniform">
+                                <Canvas Width="30" Height="30">
+                                    <Ellipse Canvas.Left="10.5" Canvas.Top="6.6"
+                                             Width="9" Height="9" Fill="#FFFFFF" Opacity="0.95" />
+                                    <Path Fill="#FFFFFF" Opacity="0.95"
+                                          Data="M15,17.4 C10.3,17.4 6.7,20.3 5.9,24.5 L24.1,24.5 C23.3,20.3 19.7,17.4 15,17.4 Z" />
+                                </Canvas>
+                            </Viewbox>
+                        </Grid>
+                        <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="本地用户" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource PrimaryTextBrush}" />
+                            <TextBlock Text="{Binding ApiKeyStatus}" Style="{StaticResource HintText}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Grid>
                     <hc:Divider Margin="0,2,0,4" />
                     <Button Content="模型设置"
                             Style="{StaticResource MenuItemButton}"
                             Click="OpenSettingsFromMenu_Click" />
-                    <Button Content="技能选择"
+                    <Button Content="技能管理"
                             Style="{StaticResource MenuItemButton}"
                             Click="OpenSkillsFromMenu_Click" />
                 </StackPanel>

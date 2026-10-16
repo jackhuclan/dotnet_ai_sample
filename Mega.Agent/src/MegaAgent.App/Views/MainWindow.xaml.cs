@@ -121,7 +121,11 @@ public partial class MainWindow : Window
 
     // ---------------- 输入框按键（斜杠技能浮层 + 发送） ----------------
 
-    private void InputBox_KeyDown(object sender, KeyEventArgs e)
+    /// <summary>
+    /// 用 PreviewKeyDown 而非 KeyDown：AcceptsReturn=True 的 TextBox 内部
+    /// TextEditor 会先消费 Enter（插入换行并标记 Handled），KeyDown 收不到。
+    /// </summary>
+    private void InputBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         var vm = Vm;
         if (vm is null) return;
@@ -150,16 +154,19 @@ public partial class MainWindow : Window
             }
         }
 
-        if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == 0)
+        if (e.Key != Key.Enter)
         {
-            e.Handled = true;
-            if (vm.SendMessageCommand.CanExecute(null))
-                vm.SendMessageCommand.Execute(null);
+            if (e.Key == Key.Escape)
+                vm.CloseSkillPopup();
+            return;
         }
-        else if (e.Key == Key.Escape)
-        {
-            vm.CloseSkillPopup();
-        }
+
+        // Enter 发送；Shift+Enter 交给 TextBox 自己插入换行
+        if ((Keyboard.Modifiers & ModifierKeys.Shift) != 0) return;
+
+        e.Handled = true;
+        if (vm.SendMessageCommand.CanExecute(null))
+            vm.SendMessageCommand.Execute(null);
     }
 
     protected override void OnClosing(CancelEventArgs e)

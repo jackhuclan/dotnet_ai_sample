@@ -15,31 +15,45 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" Text="技能名称" Style="{StaticResource FormLabel}" Margin="0,0,0,6" />
+            <TextBlock Grid.Row="0" Margin="0,0,0,6" Style="{StaticResource FormLabel}">
+                <Run Text="技能名称" /><Run Text=" *" Foreground="{DynamicResource DangerBrush}" />
+            </TextBlock>
             <hc:TextBox Grid.Row="1" x:Name="NameBox" hc:InfoElement.Placeholder="例如：翻译助手" />
+            <TextBlock Grid.Row="2" x:Name="NameError" Style="{StaticResource FieldError}" />
 
-            <TextBlock Grid.Row="2" Text="技能描述" Style="{StaticResource FormLabel}" />
-            <hc:TextBox Grid.Row="3" x:Name="DescBox" hc:InfoElement.Placeholder="一句话说明技能用途" />
+            <TextBlock Grid.Row="3" Style="{StaticResource FormLabel}">
+                <Run Text="技能描述" /><Run Text=" *" Foreground="{DynamicResource DangerBrush}" />
+            </TextBlock>
+            <hc:TextBox Grid.Row="4" x:Name="DescBox" hc:InfoElement.Placeholder="一句话说明技能用途" />
+            <TextBlock Grid.Row="5" x:Name="DescError" Style="{StaticResource FieldError}" />
 
-            <Grid Grid.Row="4" Margin="0,4,0,0">
+            <Grid Grid.Row="6" Margin="0,4,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Text="系统提示词（System Prompt）" Style="{StaticResource FormLabel}" />
+                <TextBlock Grid.Row="0" Style="{StaticResource FormLabel}">
+                    <Run Text="系统提示词（System Prompt）" /><Run Text=" *" Foreground="{DynamicResource DangerBrush}" />
+                </TextBlock>
                 <hc:TextBox Grid.Row="1"
                             x:Name="PromptBox"
                             AcceptsReturn="True"
                             TextWrapping="Wrap"
+                            VerticalContentAlignment="Top"
                             VerticalScrollBarVisibility="Auto"
+                            Padding="6,4"
                             hc:InfoElement.Placeholder="作为 system prompt 注入模型，例如：你是一名专业翻译……" />
+                <TextBlock Grid.Row="2" x:Name="PromptError" Style="{StaticResource FieldError}" />
             </Grid>
 
-            <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
                 <Button Content="保存" MinWidth="76" Margin="0,0,8,0"
                         Style="{StaticResource ButtonPrimary}"
                         Click="SaveButton_Click" />
