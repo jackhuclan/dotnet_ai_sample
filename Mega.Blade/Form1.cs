@@ -21,17 +21,17 @@ public partial class Form1 : Form
 #pragma warning restore MEAI001 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
     private void button1_Click(object sender, EventArgs e)
     {
-        MessageBox.Show(this, "button1_Click!");
+        MessageBox.Show(this, $"当前设备：{_device.ProductId}/{_device.DeviceId}-button1_Click!");
     }
 
     private void button2_Click(object sender, EventArgs e)
     {
-        MessageBox.Show(this, "button2_Click!");
+        MessageBox.Show(this, $"当前设备：{_device.ProductId}/{_device.DeviceId}-button2_Click!");
     }
 
     private void CustomEvent(string eventName, object eventData)
     {
-        MessageBox.Show(this, $"event_name: {eventName}, data: {eventData}");
+        MessageBox.Show(this, $"当前设备：{_device.ProductId}/{_device.DeviceId}-event_name: {eventName}, data: {eventData}");
     }
 
     private void Form1_Load(object sender, EventArgs e)
